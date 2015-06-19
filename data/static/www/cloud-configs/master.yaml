@@ -1,0 +1,77 @@
+#cloud-config
+
+---
+coreos:
+  etcd2:
+    name: etcd
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    initial-cluster: etcd=http://172.16.16.15:2380
+    initial-advertise-peer-urls: http://172.16.16.15:2380
+    listen-peer-urls: http://172.16.16.15:2380,http://172.16.16.15:7001
+    advertise-client-urls: http://172.16.16.15:2379,http://172.16.16.15:4001
+    initial-cluster-state: new
+  fleet:
+    etcd-servers: http://172.16.16.15:2379
+    metadata: "role=boss,kube-role=master"
+  units:
+  - name: etcd2.service
+    enabled: false
+  - name: fleet.service
+    command: start
+  - flannel:
+      etcd-endpoints: http://172.16.16.15:4001
+      interface: enp0s25
+  - name: docker-tcp.socket
+    command: start
+    content: |
+      [Unit]
+      Description=Docker Socket for the API
+
+      [Socket]
+      ListenStream=0.0.0.0:2375
+      Service=docker.service
+      BindIPv6Only=both
+
+      [Install]
+      WantedBy=sockets.target
+  - name: setup-network-environment.service
+    command: start
+    content: |
+      [Unit]
+      Description=Setup Network Environment
+      Documentation=https://github.com/kelseyhightower/setup-network-environment
+      Requires=network-online.target
+      After=network-online.target
+      Before=flanneld.service
+
+      [Service]
+      ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+      ExecStartPre=/usr/bin/wget -N -P /opt/bin http://172.16.16.15/kubernetes/setup-network-environment
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
+      ExecStart=/opt/bin/setup-network-environment
+      RemainAfterExit=yes
+      Type=oneshot
+  - name: enable-docker-tcp.service
+    command: start
+    content: |
+      [Unit]
+      Description=Enable the Docker Socket for the API
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/systemctl enable docker-tcp.socket
+  - name: docker.service
+    command: restart
+    content: |
+      [Unit]
+      Description=Docker Application Container Engine 
+      Documentation=http://docs.docker.io
+      After=network.target
+      [Service]
+      ExecStartPre=/bin/mount --make-rprivate /
+      # Run docker but don't have docker automatically restart
+      # containers. This is a job for systemd and unit files.
+      ExecStart=/usr/bin/docker -d -H fd://  --insecure-registry 172.16.16.15:5000
+
+      [Install]
+      WantedBy=multi-user.target

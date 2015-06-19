@@ -1,0 +1,33 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.require_version ">= 1.7.0"
+
+USER_DATA = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), '../data/static/www/cloud-configs/master.yaml'))
+Vagrant.configure(2) do |config|
+
+  config.vm.box = "http://beta.release.core-os.net/amd64-usr/current/coreos_production_vagrant.box"
+
+  config.vm.box_check_update = true
+
+  config.ssh.insert_key = false
+
+  config.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.15"
+
+  config.vm.hostname = "node-vagrant"
+  
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+  config.vm.synced_folder "../data/" , "/vagrant-data", disabled: false
+  config.vm.provider :virtualbox do |vb, override|
+    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+    vb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
+  end
+
+  if File.exists?(USER_DATA)
+    config.vm.provision :file, :source => USER_DATA, :destination => "/tmp/vagrantfile-user-data"
+    config.vm.provision :shell, :privileged => true,
+    inline: <<-EOF
+      mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/
+    EOF
+  end
+end

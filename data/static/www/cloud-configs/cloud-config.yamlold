@@ -1,0 +1,138 @@
+#cloud-config
+
+---
+coreos:
+ # etcd2:
+ #   proxy: readonly
+ #   name: node-vagrant
+ #   data-dir: /var/lib/etcd2/
+ #   initial-cluster-token: etcd-cluster
+ #   listen-client-urls: http://127.0.0.1:2379,http://127.0.0.1:8080
+ #   advertise-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+ #   initial-cluster: etcd01=http://172.16.16.15:2380
+  fleet:
+    etcd-servers: http://172.16.16.15:2379
+    metadata: "role=node"
+  units:
+  - name: etcd2.service
+    enabled: false
+  - name: fleet.service
+    command: start
+  - flannel:
+      etcd-endpoints: http://172.16.16.15:2379
+      interface: enp0s25
+  - name: docker-tcp.socket
+    command: start
+    content: |
+      [Unit]
+      Description=Docker Socket for the API
+
+      [Socket]
+      ListenStream=2375
+      Service=docker.service
+      BindIPv6Only=both
+
+      [Install]
+      WantedBy=sockets.target
+  - name: setup-network-environment.service
+    command: start
+    content: |
+      [Unit]
+      Description=Setup Network Environment
+      Documentation=https://github.com/kelseyhightower/setup-network-environment
+      Requires=network-online.target
+      After=network-online.target
+      Before=flanneld.service
+
+      [Service]
+      ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+      ExecStartPre=/usr/bin/wget -N -P /opt/bin http://172.16.16.15/kubernetes/setup-network-environment
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
+      ExecStart=/opt/bin/setup-network-environment
+      RemainAfterExit=yes
+      Type=oneshot
+  - name: enable-docker-tcp.service
+    command: start
+    content: |
+      [Unit]
+      Description=Enable the Docker Socket for the API
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/systemctl enable docker-tcp.socket
+  - name: early-docker.service
+    command: start
+    content: |
+      [Unit]
+      Description=Early Docker Application Container Engine
+      Documentation=http://docs.docker.com
+      After=early-docker.socket
+      Requires=early-docker.socket
+
+      [Service]
+      Environment=TMPDIR=/var/tmp
+      MountFlags=slave
+      LimitNOFILE=1048576
+      LimitNPROC=1048576
+      ExecStart=/usr/lib/coreos/dockerd --daemon --insecure-registry 172.16.16.15:5000 --host=fd:// \
+        --bridge=none --iptables=false --ip-masq=false --graph=/var/li
+
+      [Install]
+      WantedBy=early-docker.target
+  - name: flanneld.service
+    command: start
+    content: |
+      Unit]
+      Description=Network fabric for containers
+      Documentation=https://github.com/coreos/flannel
+      Requires=early-docker.service
+      After=etcd.service etcd2.service early-docker.service
+      Before=early-docker.target
+
+      [Service]
+      Type=notify
+      Restart=always
+      RestartSec=5
+      Environment="TMPDIR=/var/tmp/"
+      Environment="DOCKER_HOST=unix:///var/run/early-docker.sock"
+      Environment="FLANNEL_VER=0.4.1"
+      Environment="ETCD_SSL_DIR=/etc/ssl/etcd"
+      Environment="ETCD_ENDPOINTS=http://172.16.16.15:2379"
+      LimitNOFILE=40000
+      LimitNPROC=1048576
+      ExecStartPre=/sbin/modprobe ip_tables
+      ExecStartPre=/usr/bin/mkdir -p /run/flannel
+      ExecStartPre=/usr/bin/mkdir -p ${ETCD_SSL_DIR}
+      ExecStartPre=/usr/bin/touch /run/flannel/options.env
+
+      ExecStart=/usr/libexec/sdnotify-proxy /run/flannel/sd.sock \
+        /usr/bin/docker run --net=host --privileged=true --rm \
+        --volume=/run/flannel:/run/flannel \
+        --env=NOTIFY_SOCKET=/run/flannel/sd.sock \
+        --env-file=/run/flannel/options.env \
+        --volume=/usr/share/ca-certificates:/etc/ssl/certs:ro \
+        --volume=${ETCD_SSL_DIR}:/etc/ssl/etcd:ro \
+        172.16.16.15:5000/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
+
+      # Update docker options
+      ExecStartPost=/usr/bin/docker run --net=host --rm -v /run:/run \
+       172.16.16.15:5000/flannel:${FLANNEL_VER} \
+        /opt/bin/mk-docker-opts.sh -d /run/flannel_docker_opts.env -i
+
+  - name: docker.service
+    command: restart
+    content: |
+      [Unit]
+      Description=Docker Application Container Engine 
+      Documentation=http://docs.docker.io
+      After=flanneld.service
+      [Service]
+      ExecStartPre=/bin/mount --make-rprivate /
+      # Run docker but don't have docker automatically restart
+      # containers. This is a job for systemd and unit files.
+      ExecStart=/usr/bin/docker -d -H fd://  --insecure-registry 172.16.16.15:5000
+
+      [Install]
+        WantedBy=multi-user.target
+  ssh-authorized-keys:
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC1WXArdPrWtw4hoUsSZOFLUqPmrciREYuSqPoyek1fxv+NsDy5kJ4khserlFLs5HkPe6MBi2vlF1wBp3dg5XcKClUyRShCadmNbiOvGJoafqoP5btUhDdaFkYfPLhQ7S0IN5Vitk2YvmDLMnfnujkKKtQojRwIuBx0udxmigGjIu16C46LbNeTCzoJVm2dSl1lsG7IouQHcjgh77RM1HV81dNEPQrb/id6ICELppqfwK6j9fRoa8Yh33xhOALb50h71ma0EUGsTFBFaa372438aoFZOrIOLpOLEn36lDTXKnRrBQXlirt6o3kxSwM37Z1jRmsdA0UOtL5oNFPYmBJf leetchang@gmail.com
