@@ -2,18 +2,19 @@
 
 ---
 coreos:
-#  etcd2:
-#    proxy: readonly
-#    data-dir: /var/lib/etcd2/
-#    initial-cluster-token: etcd-cluster
-#    listen-client-urls: http://127.0.0.1:2379,http://127.0.0.1:8080
-#    initial-cluster: etcd01=http://172.16.16.15:2380
+  etcd2:
+    proxy: readonly
+    data-dir: /var/lib/etcd2/
+    initial-cluster-token: etcd-cluster
+    listen-client-urls: http://127.0.0.1:2379,http://127.0.0.1:8080
+    initial-cluster: etcd01=http://172.16.16.15:2380
   fleet:
     etcd-servers: http://172.16.16.15:2379
     metadata: "role=peon,kube-role=node"
+    public-ip: 172.16.16.20
   units:
   - name: etcd2.service
-    enabled: false
+    enabled: true
   - name: fleet.service
     command: start
   - flannel:
