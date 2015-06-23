@@ -1,15 +1,16 @@
-registry:
-  image: "registry:2.0"
-  command: >
-  net: "host"
-  restart: "always"
-  volumes:
-    - "/vagrant_data:/vagrant_data"
-  environment:
-    REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /vagrant_data/registry
-    REGISTRY_HTTP_ADDR: 0.0.0.0:5000
-  ports:
-    - "5000:5000"
+#registry:
+#  image: "registry:2.0"
+#  command: >
+#  net: "host"
+#  restart: "always"
+#  volumes:
+#    - "/vagrant_data:/vagrant_data"
+#  environment:
+#    REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /vagrant_data/registry
+#    REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+#  ports:
+#    - "5000:5000"
+#  privileged: true
 dnsmasq:
   image: "172.16.16.15:5000/dnsmasq-local"
   net: "host"
@@ -17,40 +18,23 @@ dnsmasq:
   volumes:
     - "/vagrant_data/dnsmasq/dnsmasq.conf.d:/etc/dnsmasq.conf.d"
     - "/vagrant_data/dnsmasq/tftpboot:/var/tftpboot"
-nginx:
-  image: "172.16.16.15:5000/nginx-local"
+#nginx:
+#  image: "172.16.16.15:5000/nginx-local"
+#  net: "host"
+#  restart: "always"
+#  volumes:
+#    - "/vagrant_data/nginx:/etc/nginx"
+#    - "/vagrant_data/static:/data"
+configorator:
+  image: "172.16.16.15:5000/configorator"
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant_data/nginx:/etc/nginx"
-    - "/vagrant_data/static:/data"
-etcd:
-  image: "172.16.16.15:5000/etcd-local:v2.0.10"
-  command: >
-    --advertise-client-urls http://172.16.16.15:2379 
-    --data-dir /var/lib/etcd2
-    --listen-client-urls http://172.16.16.15:2379,http://127.0.0.1:2379 
-    --listen-peer-urls http://172.16.16.15:2380
-    --max-wals 0
-    --name etcd01
-    --initial-cluster-state new
-    --initial-cluster-token etcd-cluster
-    --initial-cluster etcd01=http://172.16.16.15:2380
-    --advertise-client-urls http://172.16.16.15:2379
-  net: "host"
-  ports:
-    - "2379:2379"
-    - "2380:2380"
-  restart: "always"
-  volumes:
-    - "/vagrant_data/etcd:var/lib/etcd2"
-    - "/vagrant_data/etcd/ssl/certs/:/etc/ssl/certs"
-fleetd:
-  image: "172.16.16.15:5000/fleetd:0.10.2"
-  command: >
-    -etcd-servers http://172.16.16.15:2379
-  net: "host"
-  restart: "always"
+    - "/vagrant_data/cloud-config-templates:/cloud-config-templates:ro"
+  command: run web
+    --port 80
+    --template /cloud-config-templates
+    --master 172.16.16.15
 apiserver:
   image: "172.16.16.15:5000/kube-apiserver:0.18.2"
   command: >
@@ -93,7 +77,7 @@ register:
   image: "172.16.16.15:5000/kube-register:0.0.4"
   command: >
     --api-endpoint="http://172.16.16.15:8080"
-    --fleet-endpoint="http://172.16.16.15:2379"
+    --fleet-endpoint="http://172.16.16.15:4002"
     --healthz-port="10255"
     --metadata="kube-role=node"
     --sync-interval=10
