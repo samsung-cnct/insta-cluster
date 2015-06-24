@@ -140,5 +140,3 @@ coreos:
         --healthz_port=10254  --cadvisor_port=4194 --log_cadvisor_usage=true --logtostderr=true --v=0
       Restart=always
       RestartSec=10
-ssh-authorized-keys:
-  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC1WXArdPrWtw4hoUsSZOFLUqPmrciREYuSqPoyek1fxv+NsDy5kJ4khserlFLs5HkPe6MBi2vlF1wBp3dg5XcKClUyRShCadmNbiOvGJoafqoP5btUhDdaFkYfPLhQ7S0IN5Vitk2YvmDLMnfnujkKKtQojRwIuBx0udxmigGjIu16C46LbNeTCzoJVm2dSl1lsG7IouQHcjgh77RM1HV81dNEPQrb/id6ICELppqfwK6j9fRoa8Yh33xhOALb50h71ma0EUGsTFBFaa372438aoFZOrIOLpOLEn36lDTXKnRrBQXlirt6o3kxSwM37Z1jRmsdA0UOtL5oNFPYmBJf leetchang@gmail.com
