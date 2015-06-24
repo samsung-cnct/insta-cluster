@@ -47,9 +47,9 @@ apiserver:
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant/data/kubernetes:/etc/kubernetes"
+    - "/etc/kubernetes:/etc/kubernetes"
     - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
-    - "/vagrant/data/run/kubernetes:/var/run/kubernetes"
+    - "/var/run/kubernetes:/var/run/kubernetes"
 controllermanager:
   image: "172.16.16.15:5000/kube-controller-manager:0.18.2"
   command: >
@@ -60,7 +60,7 @@ controllermanager:
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant/data/kubernetes:/etc/kubernetes"
+    - "/etc/kubernetes:/etc/kubernetes"
     - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
 scheduler:
   image: "172.16.16.15:5000/kube-scheduler:0.18.2"
@@ -71,7 +71,7 @@ scheduler:
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant/data/kubernetes:/etc/kubernetes"
+    - "/etc/kubernetes:/etc/kubernetes"
     - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
 register:
   image: "172.16.16.15:5000/kube-register:0.0.4"
