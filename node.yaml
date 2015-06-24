@@ -1,0 +1,144 @@
+#cloud-config
+
+---
+coreos:
+  etcd2:
+    proxy: readonly
+    data-dir: /var/lib/etcd2/
+    listen-client-urls: http://127.0.0.1:2379,http://127.0.0.1:4001
+    advertise-client-urls: http://127.0.0.1:2379,http://127.0.0.1:4001
+    initial-cluster: etcd01=http://172.16.16.15:2380
+  fleet:
+    etcd-servers: http://172.16.16.15:2379
+    metadata: "role=peon,kube-role=node"
+    public-ip: 172.16.16.16
+  units:
+  - name: etcd2.service
+    enable: true
+    command: start
+    # Disabling etcd may not be necessary but in case it is...
+  - name: etcd.service
+    enable: false
+  - name: fleet.service
+    command: start
+  - flannel:
+      etcd-endpoints: http://172.16.16.15:2379
+      interface: 172.16.16.16
+  - name: docker.socket
+    command: start
+    drop-ins:
+      - name: 50-early-docker.conf
+        content: |
+          [Unit]
+          Requires=flanneld.service
+          After=flanneld.service
+  - name: docker.service
+    command: start
+    drop-ins:
+      - name: 50-docker-registry.conf
+        content: |
+          [Unit]
+          [Service]
+          Environment=DOCKER_OPTS='--insecure-registry=172.16.16.15:5000 --registry-mirror=http://172.16.16.15:5000'
+  - name: setup-network-environment.service
+    command: start
+    content: |
+      [Unit]
+      Description=Setup Network Environment
+      Documentation=https://github.com/kelseyhightower/setup-network-environment
+      Requires=network-online.target
+      After=network-online.target
+      Before=flanneld.service
+
+      [Service]
+      ExecStartPre=-/usr/bin/docker kill setup-network-environment
+      ExecStart=/usr/bin/docker run --net host --privileged=true --name setup-network-environment 172.16.16.15:5000/setup-network-environment
+      ExecStop=-/usr/bin/docker rm setup-network-environment
+      Type=oneshot
+  - name: early-docker.service
+    command: start
+    content: |
+      [Unit]
+      Description=Early Docker Application Container Engine
+      Documentation=http://docs.docker.com
+      After=early-docker.socket
+      Requires=early-docker.socket
+
+      [Service]
+      Environment=TMPDIR=/var/tmp
+      MountFlags=slave
+      LimitNOFILE=1048576
+      LimitNPROC=1048576
+      ExecStart=/usr/lib/coreos/dockerd --daemon --insecure-registry=172.16.16.15:5000 --host=fd:// --bridge=none --iptables=false --ip-masq=false --graph=/var/li
+
+      [Install]
+      WantedBy=early-docker.target
+  - name: flanneld.service
+    command: start
+    content: |    
+      Unit]
+      Description=Network fabric for containers
+      Documentation=https://github.com/coreos/flannel
+      Requires=early-docker.service
+      After=etcd.service etcd2.service early-docker.service
+      Before=early-docker.target
+
+      [Service]
+      Type=notify
+      Restart=always
+      RestartSec=5
+      Environment="TMPDIR=/var/tmp/"
+      Environment="DOCKER_HOST=unix:///var/run/early-docker.sock"
+      Environment="FLANNEL_VER=0.4.0"
+      Environment="ETCD_SSL_DIR=/etc/ssl/etcd"
+      LimitNOFILE=40000
+      LimitNPROC=1048576
+      ExecStartPre=/sbin/modprobe ip_tables
+      ExecStartPre=/usr/bin/mkdir -p /run/flannel
+      ExecStartPre=/usr/bin/mkdir -p ${ETCD_SSL_DIR}
+      ExecStartPre=/usr/bin/touch /run/flannel/options.env
+
+      ExecStart=/usr/libexec/sdnotify-proxy /run/flannel/sd.sock \
+        /usr/bin/docker -H="unix:///vr/run/early-docker.sock" run --net=host --privileged=true --rm \
+        --volume=/run/flannel:/run/flannel \
+        --env=NOTIFY_SOCKET=/run/flannel/sd.sock \
+        --env=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+        --env=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+        --env-file=/run/flannel/options.env \
+        --volume=/usr/share/ca-certificates:/etc/ssl/certs:ro \
+        --volume=${ETCD_SSL_DIR}:/etc/ssl/etcd:ro \
+        172.16.16.15:5000/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
+
+      # Update docker options
+      ExecStartPost=/usr/bin/docker run --net=host --rm -v /run:/run \
+        quay.io/coreos/flannel:${FLANNEL_VER} \
+        /opt/bin/mk-docker-opts.sh -d /run/flannel_docker_opts.env -i
+  - name: kubelet.service
+    command: start
+    content: |
+      [Unit]
+      Description=kubelet
+      Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+      After=docker.service
+      Requires=docker.service
+
+      [Service]
+      TimeoutStartSec=0
+      ExecStartPre=-/usr/bin/docker kill kubelet
+      ExecStartPre=-/usr/bin/docker rm kubelet
+      ExecStart=/usr/bin/docker run --net=host --privileged=true -p 10255:10255 -p 10250:10250 \
+        -v "/usr/bin/nsenter:/nsenter"  -v "/usr:/usr" -v "/lib64:/lib64" \
+        -v "/etc/kubernetes:/etc/kubernetes" -v "/etc/os-release:/etc/os-release" \
+        -v "/usr/share/ca-certificates/:/etc/ssl/certs" -v "/sys:/sys:ro" \
+        -v "/etc/machine-id:/etc/machine-id" -v "/var/lib/docker/:/var/lib/docker:ro" \
+        -v "/var/lib/kubelet/:/var/lib/kubelet:rw" -v "/var/run:/var/run:rw" \
+        --name kubelet 172.16.16.15:5000/kubelet:0.18.2 /kubelet \
+        --address=0.0.0.0 --enable_server=true --port=10250 --read_only_port=10255 \
+        --api_servers=172.16.16.15:8080 --cluster_dns=10.100.0.10 \
+        --cluster_domain=cluster.local --healthz_bind_address=0.0.0.0 \
+        --hostname_override=172.16.16.16 \
+        --healthz_port=10254  --cadvisor_port=4194 --log_cadvisor_usage=true --logtostderr=true --v=0
+      Restart=always
+      RestartSec=10
+ssh-authorized-keys:
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC1WXArdPrWtw4hoUsSZOFLUqPmrciREYuSqPoyek1fxv+NsDy5kJ4khserlFLs5HkPe6MBi2vlF1wBp3dg5XcKClUyRShCadmNbiOvGJoafqoP5btUhDdaFkYfPLhQ7S0IN5Vitk2YvmDLMnfnujkKKtQojRwIuBx0udxmigGjIu16C46LbNeTCzoJVm2dSl1lsG7IouQHcjgh77RM1HV81dNEPQrb/id6ICELppqfwK6j9fRoa8Yh33xhOALb50h71ma0EUGsTFBFaa372438aoFZOrIOLpOLEn36lDTXKnRrBQXlirt6o3kxSwM37Z1jRmsdA0UOtL5oNFPYmBJf leetchang@gmail.com

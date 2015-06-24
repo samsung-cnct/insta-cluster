@@ -11,27 +11,64 @@ DATA_PATH="data/"
 
 
 
-USER_DATA = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'master.yaml'))
+MASTER_USER_DATA = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'master.yaml'))
+NODE_USER_DATE = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'node.yaml'))
 Vagrant.configure(2) do |config|
 
-  config.vm.box = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_vagrant.box"
+  config.vm.define "master" do |master|
 
-  config.vm.box_check_update = true
+    master.vm.box = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_vagrant.box"
 
-  config.ssh.insert_key = false
+    master.vm.box_check_update = true
 
-  config.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.15"
-  config.vm.network "private_network", adapter: 3, ip: "192.168.100.10" 
+    master.ssh.insert_key = false
 
-  config.vm.network "forwarded_port", guest: 2375, host: 2375
+    master.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.15"
+    master.vm.network "private_network", adapter: 3, ip: "192.168.100.10" 
 
-  config.vm.hostname = "node-vagrant"
-  
-  config.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
-  #config.vm.synced_folder "data/" , "/vagrant_data", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
-  config.vm.provider :virtualbox do |vb, override|
-    vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
-    vb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
+    master.vm.network "forwarded_port", guest: 2375, host: 2375
+
+    master.vm.hostname = "master"
+    
+    master.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
+    #config.vm.synced_folder "data/" , "/vagrant_data", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
+    master.vm.provider :virtualbox do |mvb, override|
+      mvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+      mvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
+    end
+
+    if File.exists?(USER_DATA)
+      master.vm.provision :file, :source => MASTER_USER_DATA, :destination => "/tmp/vagrantfile-user-data"
+      master.vm.provision :shell, :privileged => true,
+      inline: <<-EOF
+        mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/
+      EOF
+    end
+  end
+
+  config.vm.define "node-primary" do |node|
+    node.vm.box = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_vagrant.box"
+
+    node.vm.box_check_update = true
+
+    node.ssh.insert_key = false
+
+    node.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.16"
+
+    node.vm.hostname = "node-vagrant"
+    
+    node.vm.provider :virtualbox do |nvb, override|
+      nvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+      nvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
+    end
+
+    if File.exists?(USER_DATA)
+      node.vm.provision :file, :source => NODE_USER_DATA, :destination => "/tmp/vagrantfile-user-data"
+      node.vm.provision :shell, :privileged => true,
+      inline: <<-EOF
+        mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/
+      EOF
+    end
   end
 
   # Download the corresponding CoreOS image files for the the TFTP boot server
@@ -44,13 +81,5 @@ Vagrant.configure(2) do |config|
   system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
   system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/registry.tar.gz"
   system "tar -zxf #{DATA_PATH}docker-registry.tar -C #{DATA_PATH}"
-  system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATH}"
+  system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATHd}"
 
-  if File.exists?(USER_DATA)
-    config.vm.provision :file, :source => USER_DATA, :destination => "/tmp/vagrantfile-user-data"
-    config.vm.provision :shell, :privileged => true,
-    inline: <<-EOF
-      mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/
-    EOF
-  end
-end
