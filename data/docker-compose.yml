@@ -5,13 +5,6 @@ dnsmasq:
   volumes:
     - "/vagrant/data/dnsmasq.conf.d:/etc/dnsmasq.conf.d"
     - "/vagrant/data/tftpboot:/var/tftpboot"
-#nginx:
-#  image: "172.16.16.15:5000/nginx-local"
-#  net: "host"
-#  restart: "always"
-#  volumes:
-#    - "/vagrant/data/nginx:/etc/nginx"
-#    - "/vagrant/data/static:/data"
 configorator:
   image: "172.16.16.15:5000/configorator"
   net: "host"
