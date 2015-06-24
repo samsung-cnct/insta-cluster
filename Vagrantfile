@@ -83,6 +83,9 @@ Vagrant.configure(2) do |config|
   # Will not download files if they are not newer then the existing files
   system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
   system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/registry.tar.gz"
-  system "tar -zxf #{DATA_PATH}docker-registry.tar -C #{DATA_PATH}"
   system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATH}"
+
+  # Download the required version for kubectl for this cluster service deployemnt
+  system "wget -N -P services https://s3-us-west-2.amazonaws.com/insta-cluster/kubectl"
+
 end
