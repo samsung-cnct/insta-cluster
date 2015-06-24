@@ -5,8 +5,8 @@ coreos:
   etcd2:
     proxy: readonly
     data-dir: /var/lib/etcd2/
-    initial-cluster-token: etcd-cluster
-    listen-client-urls: http://127.0.0.1:2379,http://127.0.0.1:8080
+    listen-client-urls: http://127.0.0.1:2379,http://127.0.0.1:4001
+    advertise-client-urls: http://127.0.0.1:2379,http://127.0.0.1:4001
     initial-cluster: etcd01=http://{{.MasterIpAddr}}:2380
   fleet:
     etcd-servers: http://{{.MasterIpAddr}}:2379
@@ -22,8 +22,24 @@ coreos:
   - name: fleet.service
     command: start
   - flannel:
-      etcd-endpoints: http://{{.MasterIpAddr}}:4001
+      etcd-endpoints: http://{{.MasterIpAddr}}:2379
       interface: {{.HostIpAddr}}
+  - name: docker.socket
+    command: start
+    drop-ins:
+      - name: 50-early-docker.conf
+        content: |
+          [Unit]
+          Requires=flanneld.service
+          After=flanneld.service
+  - name: docker.service
+    command: start
+    drop-ins:
+      - name: 50-docker-registry.conf
+        content: |
+          [Unit]
+          [Service]
+          Environment=DOCKER_OPTS='--insecure-registry={{.MasterIpAddr}}:5000 --registry-mirror=http://{{.MasterIpAddr}}:5000'
   - name: setup-network-environment.service
     command: start
     content: |
@@ -39,24 +55,64 @@ coreos:
       ExecStart=/usr/bin/docker run --net host --privileged=true --name setup-network-environment {{.MasterIpAddr}}:5000/setup-network-environment
       ExecStop=-/usr/bin/docker rm setup-network-environment
       Type=oneshot
-  - name: docker.service
-    content: |    
+  - name: early-docker.service
+    command: start
+    content: |
       [Unit]
-      Description=Docker Application Container Engine
+      Description=Early Docker Application Container Engine
       Documentation=http://docs.docker.com
-      After=docker.socket early-docker.target network.target
-      Requires=docker.socket early-docker.target
+      After=early-docker.socket
+      Requires=early-docker.socket
 
       [Service]
       Environment=TMPDIR=/var/tmp
-      EnvironmentFile=-/run/flannel_docker_opts.env
       MountFlags=slave
       LimitNOFILE=1048576
       LimitNPROC=1048576
-      ExecStart=/usr/lib/coreos/dockerd --daemon --host=fd:// $DOCKER_OPTS $DOCKER_OPT_BIP $DOCKER_OPT_MTU $DOCKER_OPT_IPMAS
+      ExecStart=/usr/lib/coreos/dockerd --daemon --insecure-registry={{.MasterIpAddr}}:5000 --host=fd:// --bridge=none --iptables=false --ip-masq=false --graph=/var/li
 
       [Install]
-      WantedBy=multi-user.target
+      WantedBy=early-docker.target
+  - name: flanneld.service
+    command: start
+    content: |    
+      Unit]
+      Description=Network fabric for containers
+      Documentation=https://github.com/coreos/flannel
+      Requires=early-docker.service
+      After=etcd.service etcd2.service early-docker.service
+      Before=early-docker.target
+
+      [Service]
+      Type=notify
+      Restart=always
+      RestartSec=5
+      Environment="TMPDIR=/var/tmp/"
+      Environment="DOCKER_HOST=unix:///var/run/early-docker.sock"
+      Environment="FLANNEL_VER=0.4.0"
+      Environment="ETCD_SSL_DIR=/etc/ssl/etcd"
+      LimitNOFILE=40000
+      LimitNPROC=1048576
+      ExecStartPre=/sbin/modprobe ip_tables
+      ExecStartPre=/usr/bin/mkdir -p /run/flannel
+      ExecStartPre=/usr/bin/mkdir -p ${ETCD_SSL_DIR}
+      ExecStartPre=/usr/bin/touch /run/flannel/options.env
+
+      ExecStart=/usr/libexec/sdnotify-proxy /run/flannel/sd.sock \
+        /usr/bin/docker -H="unix:///vr/run/early-docker.sock" run --net=host --privileged=true --rm \
+        --volume=/run/flannel:/run/flannel \
+        --env=NOTIFY_SOCKET=/run/flannel/sd.sock \
+        --env=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+        --env=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+        --env-file=/run/flannel/options.env \
+        --volume=/usr/share/ca-certificates:/etc/ssl/certs:ro \
+        --volume=${ETCD_SSL_DIR}:/etc/ssl/etcd:ro \
+        172.16.16.15:5000/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
+
+      # Update docker options
+      ExecStartPost=/usr/bin/docker run --net=host --rm -v /run:/run \
+        quay.io/coreos/flannel:${FLANNEL_VER} \
+        /opt/bin/mk-docker-opts.sh -d /run/flannel_docker_opts.env -i
   - name: kubelet.service
     command: start
     content: |

@@ -4,9 +4,9 @@
 #  net: "host"
 #  restart: "always"
 #  volumes:
-#    - "/vagrant_data:/vagrant_data"
+#    - "/vagrant/data:/vagrant/data"
 #  environment:
-#    REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /vagrant_data/registry
+#    REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /vagrant/data/registry
 #    REGISTRY_HTTP_ADDR: 0.0.0.0:5000
 #  ports:
 #    - "5000:5000"
@@ -16,21 +16,21 @@ dnsmasq:
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant_data/dnsmasq/dnsmasq.conf.d:/etc/dnsmasq.conf.d"
-    - "/vagrant_data/dnsmasq/tftpboot:/var/tftpboot"
+    - "/vagrant/data/dnsmasq/dnsmasq.conf.d:/etc/dnsmasq.conf.d"
+    - "/vagrant/data/dnsmasq/tftpboot:/var/tftpboot"
 #nginx:
 #  image: "172.16.16.15:5000/nginx-local"
 #  net: "host"
 #  restart: "always"
 #  volumes:
-#    - "/vagrant_data/nginx:/etc/nginx"
-#    - "/vagrant_data/static:/data"
+#    - "/vagrant/data/nginx:/etc/nginx"
+#    - "/vagrant/data/static:/data"
 configorator:
   image: "172.16.16.15:5000/configorator"
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant_data/cloud-config-templates:/cloud-config-templates:ro"
+    - "/vagrant/data/cloud-config-templates:/cloud-config-templates:ro"
   command: run web
     --port 80
     --template /cloud-config-templates
@@ -47,9 +47,9 @@ apiserver:
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant_data/kubernetes:/etc/kubernetes"
-    - "/vagrant_data/share/ca-certificates:/etc/ssl/certs"
-    - "/vagrant_data/run/kubernetes:/var/run/kubernetes"
+    - "/vagrant/data/kubernetes:/etc/kubernetes"
+    - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
+    - "/vagrant/data/run/kubernetes:/var/run/kubernetes"
 controllermanager:
   image: "172.16.16.15:5000/kube-controller-manager:0.18.2"
   command: >
@@ -60,8 +60,8 @@ controllermanager:
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant_data/kubernetes:/etc/kubernetes"
-    - "/vagrant_data/share/ca-certificates:/etc/ssl/certs"
+    - "/vagrant/data/kubernetes:/etc/kubernetes"
+    - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
 scheduler:
   image: "172.16.16.15:5000/kube-scheduler:0.18.2"
   command: >
@@ -71,8 +71,8 @@ scheduler:
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant_data/kubernetes:/etc/kubernetes"
-    - "/vagrant_data/share/ca-certificates:/etc/ssl/certs"
+    - "/vagrant/data/kubernetes:/etc/kubernetes"
+    - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
 register:
   image: "172.16.16.15:5000/kube-register:0.0.4"
   command: >
