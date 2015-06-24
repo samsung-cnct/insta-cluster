@@ -135,4 +135,6 @@ coreos:
       ExecStart=/opt/bin/setup-network-environment
       RemainAfterExit=yes
       Type=oneshot
-
+  update:
+    group: alpha
+    reboot-strategy: off
