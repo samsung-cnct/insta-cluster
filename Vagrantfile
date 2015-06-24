@@ -5,14 +5,14 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.require_version ">= 1.7.2"
 
 COREOS_CHANNEL="alpha"
-COREOS_RELEASE="current"
+COREOS_RELEASE="695.2.0"
 IMAGE_PATH="data/dnsmasq/tftpboot"
 DATA_PATH="data/"
 
 
 
 MASTER_USER_DATA = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'master.yaml'))
-NODE_USER_DATE = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'node.yaml'))
+NODE_USER_DATA = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'node.yaml'))
 Vagrant.configure(2) do |config|
 
   config.vm.define "master" do |master|
@@ -37,7 +37,7 @@ Vagrant.configure(2) do |config|
       mvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
 
-    if File.exists?(USER_DATA)
+    if File.exists?(MASTER_USER_DATA)
       master.vm.provision :file, :source => MASTER_USER_DATA, :destination => "/tmp/vagrantfile-user-data"
       master.vm.provision :shell, :privileged => true,
       inline: <<-EOF
@@ -62,7 +62,7 @@ Vagrant.configure(2) do |config|
       nvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
 
-    if File.exists?(USER_DATA)
+    if File.exists?(NODE_USER_DATA)
       node.vm.provision :file, :source => NODE_USER_DATA, :destination => "/tmp/vagrantfile-user-data"
       node.vm.provision :shell, :privileged => true,
       inline: <<-EOF
