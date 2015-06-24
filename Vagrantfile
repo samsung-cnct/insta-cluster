@@ -35,13 +35,16 @@ Vagrant.configure(2) do |config|
   end
 
   # Download the corresponding CoreOS image files for the the TFTP boot server
-  # Will not download images if they are not newer the exisiting files
+  # Will not download images if they are not newer then the existing files
   system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe.vmlinuz"
   system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe_image.cpio.gz"
 
   # Download and extract the docker registry and the local registry docker images
+  # Will not download files if they are not newer then the existing files
   system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
   system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/registry.tar.gz"
+  system "tar -zxf #{DATA_PATH}docker-registry.tar -C #{DATA_PATH}"
+  system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATH}"
 
   if File.exists?(USER_DATA)
     config.vm.provision :file, :source => USER_DATA, :destination => "/tmp/vagrantfile-user-data"
