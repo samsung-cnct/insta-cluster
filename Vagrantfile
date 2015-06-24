@@ -7,6 +7,7 @@ Vagrant.require_version ">= 1.7.2"
 COREOS_CHANNEL="alpha"
 COREOS_RELEASE="current"
 IMAGE_PATH="data/dnsmasq/tftpboot"
+DATA_PATH="data/"
 
 
 
@@ -37,6 +38,10 @@ Vagrant.configure(2) do |config|
   # Will not download images if they are not newer the exisiting files
   system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe.vmlinuz"
   system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe_image.cpio.gz"
+
+  # Download and extract the docker registry and the local registry docker images
+  system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
+  system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/registry.tar.gz"
 
   if File.exists?(USER_DATA)
     config.vm.provision :file, :source => USER_DATA, :destination => "/tmp/vagrantfile-user-data"
