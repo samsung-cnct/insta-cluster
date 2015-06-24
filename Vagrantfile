@@ -81,5 +81,5 @@ Vagrant.configure(2) do |config|
   system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
   system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/registry.tar.gz"
   system "tar -zxf #{DATA_PATH}docker-registry.tar -C #{DATA_PATH}"
-  system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATHd}"
+  system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATH}"
 end
