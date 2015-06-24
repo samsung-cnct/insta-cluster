@@ -1,0 +1,138 @@
+#cloud-config
+
+---
+coreos:
+  etcd2:
+    name: etcd01
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    initial-cluster: etcd01=http://172.16.16.15:2380
+    initial-advertise-peer-urls: http://172.16.16.15:2380
+    listen-peer-urls: http://172.16.16.15:2380,http://172.16.16.15:7001
+    advertise-client-urls: http://172.16.16.15:2379,http://172.16.16.15:4001
+    initial-cluster-state: new
+  fleet:
+    etcd-servers: http://172.16.16.15:2379
+    metadata: "role=boss,kube-role=master"
+  fleet:
+    public-ip: 172.16.16.15
+  units:
+  - name: etcd2.service
+    enable: true
+    command: start
+  - name: fleet.service
+    command: start
+  - flannel:
+      etcd-endpoints: http://172.16.16.15:4001
+      interface: 172.16.16.15
+  - name: docker-tcp.socket
+    command: start
+    content: |
+      [Unit]
+      Description=Docker Socket for the API
+
+      [Socket]
+      ListenStream=0.0.0.0:2375
+      Service=docker.service
+      BindIPv6Only=both
+
+      [Install]
+      WantedBy=sockets.target
+  - name: docker-tcp.socket
+    command: start
+    content: |
+      [Unit]
+      Description=Docker Socket for the API
+      After=flannel.service
+
+      [Socket]
+      ListenStream=2375
+      Service=docker.service
+      BindIPv6Only=both
+
+      [Install]
+      WantedBy=sockets.target
+  - name: docker.service
+    command: start
+    drop-ins:
+      - name: 50-docker-registry.conf
+        content: |
+          [Unit]
+          [Service]
+          Environment=DOCKER_OPTS='--insecure-registry=172.16.16.15:5000 --registry-mirror=http://172.16.16.15:5000'
+  - name: load-registry.service
+    command: start
+    content: |
+      [Unit]
+      Description=Load docker registry from local file
+      After=docker.service
+      Before=docker-registry.service
+
+      [Service]
+      ExecStart=/usr/bin/docker load --input=/vagrant/data/docker-registry.tar
+      ExecStartPost=/usr/bin/docker tag ec94325cd2c4 registry:latest
+      RemainAfterExit=yes
+      Type=oneshot
+  - name: docker-registry.service
+    command: start
+    content: |
+      [Unit]
+      Description=Start docker registry container
+      After=load-registry.service
+
+      [Service]
+      ExecStartPre=-/usr/bin/docker kill registry
+      ExecStartPre=-/usr/bin/docker rm registry
+      ExecStart=/usr/bin/docker run --net=host -P -v "/vagrant/data:/vagrant/data" \
+      -e "REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/vagrant/data/registry" \
+      -e "REGISTRY_HTTP_ADDR=0.0.0.0:5000" \
+      --name registry registry
+      Restart=always
+      RestartSec=10
+  - name: docker-compose.service
+    command: start
+    content: |
+      [Unit]
+      Description=Install and run docker compose
+      After=docker-registry.service
+
+      [Service]
+      ExecStartPre=/usr/bin/mkdir -p /opt/bin
+      ExecStartPre=/usr/bin/curl -o /opt/bin/docker-compose -L \
+        https://github.com/docker/compose/releases/download/1.3.1/docker-compose-Linux-x86_64
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/docker-compose
+      ExecStart=/opt/bin/docker-compose -f /vagrant/data/docker-compose.yml up --allow-insecure-ssl -d
+      RemainAfterExit=yes
+      Type=oneshot
+
+  - name: fleet-tcp.socket
+    command: start
+    content: |
+      [Unit]
+      Description=Fleet Socket for API
+
+      [Socket]
+      ListenStream=0.0.0.0:4002
+      Service=fleet.service
+      BindIPv6Only=both
+
+      [Install]
+      WantedBy=sockets.target
+  # Using remote files here since we don't have any container services running yet since this is the master
+  - name: setup-network-environment.service
+    command: start
+    content: |
+      [Unit]
+      Description=Setup Network Environment
+      Documentation=https://github.com/kelseyhightower/setup-network-environment
+      Requires=network-online.target
+      After=network-online.target
+      Before=flanneld.service
+
+      [Service]
+      ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+      ExecStartPre=/usr/bin/wget -N -P /opt/bin https://github.com/kelseyhightower/setup-network-environment/releases/download/v1.0.0/setup-network-environment
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
+      ExecStart=/opt/bin/setup-network-environment
+      RemainAfterExit=yes
+      Type=oneshot
+
