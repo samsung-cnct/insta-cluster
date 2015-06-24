@@ -141,5 +141,16 @@ coreos:
         --cluster_domain=cluster.local --healthz_bind_address=0.0.0.0 \
         --hostname_override=172.16.16.16 \
         --healthz_port=10254  --cadvisor_port=4194 --log_cadvisor_usage=true --logtostderr=true --v=0
-      Restart=always
-      RestartSec=10
+  - name: kube-skydns.service
+    command: start
+    content: |
+      [Unit]
+      Description=Kube SkyDNS service
+      After=kubelet.service
+
+      [Service]
+      ExecStart=/vagrant/service/kubectl create -f /vagrant/service/skydns/
+      Type=oneshot
+  update:
+    group: beta
+    reboot-strategy: off
