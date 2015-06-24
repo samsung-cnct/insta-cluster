@@ -38,8 +38,10 @@ coreos:
       - name: 50-docker-registry.conf
         content: |
           [Unit]
+          #After=early-docker.service
+          #Requires=early-docker.service
           [Service]
-          Environment=DOCKER_OPTS='--insecure-registry=172.16.16.15:5000 --registry-mirror=http://172.16.16.15:5000'
+          Environment=DOCKER_OPTS='--insecure-registry=172.16.16.15:5000'
   - name: setup-network-environment.service
     command: start
     content: |
@@ -89,17 +91,18 @@ coreos:
       RestartSec=5
       Environment="TMPDIR=/var/tmp/"
       Environment="DOCKER_HOST=unix:///var/run/early-docker.sock"
-      Environment="FLANNEL_VER=0.4.0"
+      Environment="FLANNEL_VER=0.4.1"
       Environment="ETCD_SSL_DIR=/etc/ssl/etcd"
       LimitNOFILE=40000
       LimitNPROC=1048576
+      ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "vxlan"}}'
       ExecStartPre=/sbin/modprobe ip_tables
       ExecStartPre=/usr/bin/mkdir -p /run/flannel
       ExecStartPre=/usr/bin/mkdir -p ${ETCD_SSL_DIR}
       ExecStartPre=/usr/bin/touch /run/flannel/options.env
 
       ExecStart=/usr/libexec/sdnotify-proxy /run/flannel/sd.sock \
-        /usr/bin/docker -H="unix:///vr/run/early-docker.sock" run --net=host --privileged=true --rm \
+        /usr/bin/docker -H="unix:///var/run/early-docker.sock" run --net=host --privileged=true --rm \
         --volume=/run/flannel:/run/flannel \
         --env=NOTIFY_SOCKET=/run/flannel/sd.sock \
         --env=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
@@ -111,7 +114,7 @@ coreos:
 
       # Update docker options
       ExecStartPost=/usr/bin/docker run --net=host --rm -v /run:/run \
-        quay.io/coreos/flannel:${FLANNEL_VER} \
+        172.16.16.15:5000/flannel:${FLANNEL_VER} \
         /opt/bin/mk-docker-opts.sh -d /run/flannel_docker_opts.env -i
   - name: kubelet.service
     command: start

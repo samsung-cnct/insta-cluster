@@ -54,8 +54,11 @@ Vagrant.configure(2) do |config|
     node.ssh.insert_key = false
 
     node.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.16"
+    node.vm.network "private_network", adapter: 3, ip: "192.168.100.11" 
 
     node.vm.hostname = "node-primary"
+
+    node.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
     
     node.vm.provider :virtualbox do |nvb, override|
       nvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
