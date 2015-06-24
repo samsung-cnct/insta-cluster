@@ -4,9 +4,9 @@
 VAGRANTFILE_API_VERSION = "2"
 Vagrant.require_version ">= 1.7.2"
 
-COREOS_CHANNEL="alpha"
+COREOS_CHANNEL="beta"
 COREOS_RELEASE="695.2.0"
-IMAGE_PATH="data/dnsmasq/tftpboot"
+IMAGE_PATH="data/tftpboot"
 DATA_PATH="data/"
 
 
