@@ -55,7 +55,7 @@ Vagrant.configure(2) do |config|
 
     node.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.16"
 
-    node.vm.hostname = "node-vagrant"
+    node.vm.hostname = "node-primary"
     
     node.vm.provider :virtualbox do |nvb, override|
       nvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
