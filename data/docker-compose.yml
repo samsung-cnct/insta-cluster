@@ -1,23 +1,10 @@
-#registry:
-#  image: "registry:2.0"
-#  command: >
-#  net: "host"
-#  restart: "always"
-#  volumes:
-#    - "/vagrant/data:/vagrant/data"
-#  environment:
-#    REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /vagrant/data/registry
-#    REGISTRY_HTTP_ADDR: 0.0.0.0:5000
-#  ports:
-#    - "5000:5000"
-#  privileged: true
 dnsmasq:
   image: "172.16.16.15:5000/dnsmasq-local"
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant/data/dnsmasq/dnsmasq.conf.d:/etc/dnsmasq.conf.d"
-    - "/vagrant/data/dnsmasq/tftpboot:/var/tftpboot"
+    - "/vagrant/data/dnsmasq.conf.d:/etc/dnsmasq.conf.d"
+    - "/vagrant/data/tftpboot:/var/tftpboot"
 #nginx:
 #  image: "172.16.16.15:5000/nginx-local"
 #  net: "host"
@@ -49,7 +36,7 @@ apiserver:
   volumes:
     - "/etc/kubernetes:/etc/kubernetes"
     - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
-    - "/var/run/kubernetes:/var/run/kubernetes"
+    - "/vagrant/data/run/kubernetes:/var/run/kubernetes"
 controllermanager:
   image: "172.16.16.15:5000/kube-controller-manager:0.18.2"
   command: >
