@@ -8,6 +8,7 @@ COREOS_CHANNEL="beta"
 COREOS_RELEASE="695.2.0"
 IMAGE_PATH="data/tftpboot"
 DATA_PATH="data/"
+#BRIDGE_INTERFACE='' || 'en0: Ethernet 1'    #this needs to be the extact name of the bridge interface
 
 
 
@@ -23,7 +24,7 @@ Vagrant.configure(2) do |config|
 
     master.ssh.insert_key = false
 
-    master.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.15"
+    master.vm.network "public_network", adapter: 2, ip: "172.16.16.15"
     master.vm.network "private_network", adapter: 3, ip: "192.168.100.10" 
 
     master.vm.network "forwarded_port", guest: 2375, host: 2375

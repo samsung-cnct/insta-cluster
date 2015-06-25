@@ -35,7 +35,7 @@ spec:
           args:
             # command = "/kube2sky"
             -  -domain=kubernetes.local
-            -  -kube_master_url=172.16.16.15
+            -  -kube_master_url=http://172.16.16.15:8080
             # - -kubecfg_file=/etc/dns_token/kubeconfig
           # volumeMounts:
           #  - mountPath: /etc/dns_token
@@ -45,7 +45,7 @@ spec:
           image: 172.16.16.15:5000/skydns:2015-03-11-001
           args:
             # command = "/skydns"
-            - -machines=http://localhost:2379
+            - -machines=http://localhost:4001
             - -addr=0.0.0.0:53
             - -domain=kubernetes.local.
           ports:
