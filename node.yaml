@@ -132,18 +132,38 @@ coreos:
       TimeoutStartSec=0
       ExecStartPre=-/usr/bin/docker kill kubelet
       ExecStartPre=-/usr/bin/docker rm kubelet
-      ExecStart=/usr/bin/docker run --net=host --privileged=true -p 10255:10255 -p 10250:10250 \
+      ExecStart=/usr/bin/docker run --net=host --privileged=true -P \
         -v "/usr/bin/nsenter:/nsenter"  -v "/usr:/usr" -v "/lib64:/lib64" \
         -v "/etc/kubernetes:/etc/kubernetes" -v "/etc/os-release:/etc/os-release" \
-        -v "/usr/share/ca-certificates/:/etc/ssl/certs" -v "/sys:/sys:ro" \
-        -v "/etc/machine-id:/etc/machine-id" -v "/var/lib/docker/:/var/lib/docker:ro" \
+        -v "/usr/share/ca-certificates/:/etc/ssl/certs" -v "/sys:/sys" -v "/:/rootfs" \
+        -v "/etc/machine-id:/etc/machine-id" -v "/var/lib/docker/:/var/lib/docker:rw" \
         -v "/var/lib/kubelet/:/var/lib/kubelet:rw" -v "/var/run:/var/run:rw" \
         --name kubelet 172.16.16.15:5000/kubelet:0.18.2 /kubelet \
         --address=0.0.0.0 --enable_server=true --port=10250 --read_only_port=10255 \
         --api_servers=172.16.16.15:8080 --cluster_dns=10.100.0.10 \
-        --cluster_domain=cluster.local --healthz_bind_address=0.0.0.0 \
+        --cluster_domain=kubernetes.local --healthz_bind_address=0.0.0.0 \
         --hostname_override=172.16.16.16 \
+        --pod_infra_container_image=172.16.16.15:5000/pause:0.8.0 \
         --healthz_port=10254  --cadvisor_port=4194 --log_cadvisor_usage=true --logtostderr=true --v=0
+  - name: kube-proxy.service
+    command: start
+    content: |
+      [Unit]
+      Description=kubelet
+      Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+      After=docker.service
+      Requires=docker.service
+
+      [Service]
+      TimeoutStartSec=0
+      ExecStartPre=-/usr/bin/docker kill kube-proxy
+      ExecStartPre=-/usr/bin/docker rm kube-proxy
+      ExecStart=/usr/bin/docker run --net=host --privileged=true -P \
+        -v "/usr:/usr" -v "/lib64:/lib64" \
+        -v "/etc/kubernetes:/etc/kubernetes" -v "/etc/os-release:/etc/os-release" \
+        -v "/usr/share/ca-certificates/:/etc/ssl/certs" \
+        --name kube-proxy 172.16.16.15:5000/kube-proxy:0.18.2 /kube-proxy \
+        --master=http://172.16.16.15:8080 --v=0      
   - name: kube-skydns.service
     command: start
     content: |

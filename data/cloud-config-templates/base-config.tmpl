@@ -3,7 +3,7 @@
 ---
 coreos:
   etcd2:
-    proxy: readonly
+    proxy: on
     data-dir: /var/lib/etcd2/
     listen-client-urls: http://127.0.0.1:2379,http://127.0.0.1:4001
     advertise-client-urls: http://127.0.0.1:2379,http://127.0.0.1:4001
@@ -38,10 +38,11 @@ coreos:
       - name: 50-docker-registry.conf
         content: |
           [Unit]
-          After=early-docker.service
-          Requires=early-docker.service
+          #After=early-docker.service, flanneld.service
+          #Requires=early-docker.service
           [Service]
-          Environment=DOCKER_OPTS='--insecure-registry={{.MasterIpAddr}}:5000 --registry-mirror=http://{{.MasterIpAddr}}:5000'
+          ExecStartPre=-/usr/bin/rm /var/run/docker.pid
+          Environment=DOCKER_OPTS='--insecure-registry={{.MasterIpAddr}}:5000'
   - name: setup-network-environment.service
     command: start
     content: |
@@ -55,7 +56,6 @@ coreos:
       [Service]
       ExecStartPre=-/usr/bin/docker kill setup-network-environment
       ExecStart=/usr/bin/docker run --net host --privileged=true --name setup-network-environment {{.MasterIpAddr}}:5000/setup-network-environment
-      ExecStop=-/usr/bin/docker rm setup-network-environment
       Type=oneshot
   - name: early-docker.service
     command: start
@@ -110,12 +110,15 @@ coreos:
         --env-file=/run/flannel/options.env \
         --volume=/usr/share/ca-certificates:/etc/ssl/certs:ro \
         --volume=${ETCD_SSL_DIR}:/etc/ssl/etcd:ro \
-        172.16.16.15:5000/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
+        {{.MasterIpAddr}}:5000/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
 
       # Update docker options
-      ExecStartPost=/usr/bin/docker run --net=host --rm -v /run:/run \
-        quay.io/coreos/flannel:${FLANNEL_VER} \
+      ExecStartPost=/usr/bin/docker run --net=host --privileged=true --rm -v /run:/run \
+        {{.MasterIpAddr}}:5000/flannel:${FLANNEL_VER} \
         /opt/bin/mk-docker-opts.sh -d /run/flannel_docker_opts.env -i
+      # Remove the old docker bridge because it remains for some reason
+      ExecStartPost=/usr/bin/ip link set dev docker0 down
+      ExecStartPost=/usr/sbin/brctl delbr docker0
   - name: kubelet.service
     command: start
     content: |
@@ -129,20 +132,38 @@ coreos:
       TimeoutStartSec=0
       ExecStartPre=-/usr/bin/docker kill kubelet
       ExecStartPre=-/usr/bin/docker rm kubelet
-      ExecStart=/usr/bin/docker run --net=host --privileged=true -p 10255:10255 -p 10250:10250 \
+      ExecStart=/usr/bin/docker run --net=host --privileged=true -P \
         -v "/usr/bin/nsenter:/nsenter"  -v "/usr:/usr" -v "/lib64:/lib64" \
         -v "/etc/kubernetes:/etc/kubernetes" -v "/etc/os-release:/etc/os-release" \
-        -v "/usr/share/ca-certificates/:/etc/ssl/certs" -v "/sys:/sys:ro" \
-        -v "/etc/machine-id:/etc/machine-id" -v "/var/lib/docker/:/var/lib/docker:ro" \
+        -v "/usr/share/ca-certificates/:/etc/ssl/certs" -v "/sys:/sys" -v "/:/rootfs" \
+        -v "/etc/machine-id:/etc/machine-id" -v "/var/lib/docker/:/var/lib/docker:rw" \
         -v "/var/lib/kubelet/:/var/lib/kubelet:rw" -v "/var/run:/var/run:rw" \
         --name kubelet {{.MasterIpAddr}}:5000/kubelet:0.18.2 /kubelet \
         --address=0.0.0.0 --enable_server=true --port=10250 --read_only_port=10255 \
         --api_servers={{.MasterIpAddr}}:8080 --cluster_dns=10.100.0.10 \
-        --cluster_domain=cluster.local --healthz_bind_address=0.0.0.0 \
+        --cluster_domain=kubernetes.local --healthz_bind_address=0.0.0.0 \
         --hostname_override={{.HostIpAddr}} \
+        --pod_infra_container_image={{.MasterIpAddr}}:5000/pause:0.8.0 \
         --healthz_port=10254  --cadvisor_port=4194 --log_cadvisor_usage=true --logtostderr=true --v=0
-      Restart=always
-      RestartSec=10
+  - name: kube-proxy.service
+    command: start
+    content: |
+      [Unit]
+      Description=kubelet
+      Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+      After=docker.service
+      Requires=docker.service
+
+      [Service]
+      TimeoutStartSec=0
+      ExecStartPre=-/usr/bin/docker kill kube-proxy
+      ExecStartPre=-/usr/bin/docker rm kube-proxy
+      ExecStart=/usr/bin/docker run --net=host --privileged=true -P \
+        -v "/usr:/usr" -v "/lib64:/lib64" \
+        -v "/etc/kubernetes:/etc/kubernetes" -v "/etc/os-release:/etc/os-release" \
+        -v "/usr/share/ca-certificates/:/etc/ssl/certs" \
+        --name kube-proxy {{.MasterIpAddr}}:5000/kube-proxy:0.18.2 /kube-proxy \
+        --master=http://{{.MasterIpAddr}}:8080 --v=0              
   update:
     group: beta
     reboot-strategy: off
