@@ -5,6 +5,14 @@ This deployment is designed to work off-net once you cloned this repository and 
 
 ## Usage
 
+To start off you'll need to configure your Mac OS to allow ip forwarding by running
+
+```bash
+sudo sysctl -w net.inet.ip.forwarding=1
+```
+
+Create the ```master``` node first to ensure that all services are available for the ```node-primary```. 
+
 ```vagrant up master``` will deploy to CoreOS master vm which has the following services running:
 _note_** you will be prompted for your system password to enable NFS exports
 

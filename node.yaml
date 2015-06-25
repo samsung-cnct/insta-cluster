@@ -182,6 +182,7 @@ coreos:
       --cadvisor_port=4194 \
       --log_cadvisor_usage=true \
       --logtostderr=true \
+      --pod-infra-container-image=172.16.16.15:5000/pause:0.8.0 \
       --v=0
       Restart=always
       RestartSec=10

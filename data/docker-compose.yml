@@ -1,19 +1,20 @@
 dnsmasq:
-  image: "172.16.16.15:5000/dnsmasq"
+  image: "172.16.16.15:5000/dnsmasq:stable"
   net: "host"
   restart: "always"
   volumes:
     - "/vagrant/data/dnsmasq.conf.d:/etc/dnsmasq.conf.d"
     - "/vagrant/data/tftpboot:/var/tftpboot"
 configorator:
-  image: "172.16.16.15:5000/configorator"
+  image: "172.16.16.15:5000/configorator:stable"
   net: "host"
   restart: "always"
   volumes:
-    - "/vagrant/data/cloud-config-templates:/cloud-config-templates:ro"
+    - "/vagrant/data/cloud-config-templates:/templates:ro"
+    - "/vagrant/data/k8s:/k8s"
   command: run web
     --port 80
-    --template /cloud-config-templates
+    --template templates
     --master 172.16.16.15
 apiserver:
   image: "172.16.16.15:5000/kube-apiserver:0.18.2"
