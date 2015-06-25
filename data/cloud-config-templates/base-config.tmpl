@@ -1,6 +1,19 @@
 #cloud-config
 
 ---
+write_files:
+  - path: /opt/bin/load_k8s.sh
+    owner: root
+    content: |
+      #!/usr/bin/bash
+      set -e
+      /usr/bin/mkdir -p /opt/bin
+      /usr/bin/wget -N -P /opt/bin http://{{.MasterIpAddr}}/k8s/kubelet
+      /usr/bin/chmod +x /opt/bin/kubelet
+      /usr/bin/wget -N -P /opt/bin http://{{.MasterIpAddr}}/k8s/kube-proxy
+      /usr/bin/chmod +x /opt/bin/kube-proxy
+      /usr/bin/wget -N -P /opt/bin http://{{.MasterIpAddr}}/k8s/setup-network-environment
+      /usr/bin/chmod +x /opt/bin/setup-network-environment
 coreos:
   etcd2:
     proxy: on
@@ -21,6 +34,18 @@ coreos:
     enable: false
   - name: fleet.service
     command: start
+  - name: load_k8s.service
+    command: start
+    content: |
+      [Unit]
+      Description=Download kubelet and kube-proxy
+      Wants=network-online.target
+      After=network-online.target
+      [Service]
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/load_k8s.sh
+      ExecStart=/usr/bin/bash /opt/bin/load_k8s.sh
+      RemainAfterExit=true
+      Type=oneshot
   - flannel:
       etcd-endpoints: http://{{.MasterIpAddr}}:2379
       interface: {{.HostIpAddr}}
@@ -52,10 +77,9 @@ coreos:
       Requires=network-online.target
       After=network-online.target
       Before=flanneld.service
-
       [Service]
-      ExecStartPre=-/usr/bin/docker kill setup-network-environment
-      ExecStart=/usr/bin/docker run --net host --privileged=true --name setup-network-environment {{.MasterIpAddr}}:5000/setup-network-environment
+      ExecStart=/opt/bin/setup-network-environment
+      RemainAfterExit=yes
       Type=oneshot
   - name: early-docker.service
     command: start
@@ -123,47 +147,46 @@ coreos:
     command: start
     content: |
       [Unit]
-      Description=kubelet
+      Description=Kubernetes Kubelet
       Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-      After=docker.service
-      Requires=docker.service
+      Requires=flanneld.service 
+      After=flanneld.service
 
       [Service]
-      TimeoutStartSec=0
-      ExecStartPre=-/usr/bin/docker kill kubelet
-      ExecStartPre=-/usr/bin/docker rm kubelet
-      ExecStart=/usr/bin/docker run --net=host --privileged=true -P \
-        -v "/usr/bin/nsenter:/nsenter"  -v "/usr:/usr" -v "/lib64:/lib64" \
-        -v "/etc/kubernetes:/etc/kubernetes" -v "/etc/os-release:/etc/os-release" \
-        -v "/usr/share/ca-certificates/:/etc/ssl/certs" -v "/sys:/sys" -v "/:/rootfs" \
-        -v "/etc/machine-id:/etc/machine-id" -v "/var/lib/docker/:/var/lib/docker:rw" \
-        -v "/var/lib/kubelet/:/var/lib/kubelet:rw" -v "/var/run:/var/run:rw" \
-        --name kubelet {{.MasterIpAddr}}:5000/kubelet:0.18.2 /kubelet \
-        --address=0.0.0.0 --enable_server=true --port=10250 --read_only_port=10255 \
-        --api_servers={{.MasterIpAddr}}:8080 --cluster_dns=10.100.0.10 \
-        --cluster_domain=kubernetes.local --healthz_bind_address=0.0.0.0 \
-        --hostname_override={{.HostIpAddr}} \
-        --pod_infra_container_image={{.MasterIpAddr}}:5000/pause:0.8.0 \
-        --healthz_port=10254  --cadvisor_port=4194 --log_cadvisor_usage=true --logtostderr=true --v=0
+      EnvironmentFile=/etc/network-environment
+      ExecStart=/opt/bin/kubelet \
+      --address=0.0.0.0 \
+      --enable_server=true \
+      --port=10250 \
+      --read_only_port=10255 \
+      --hostname_override={{.HostIpAddr}} \
+      --api_servers={{.MasterIpAddr}}:8080 \
+      --cluster_dns=10.100.0.10 \
+      --cluster_domain=kubernetes.local \
+      --healthz_bind_address=0.0.0.0 \
+      --healthz_port=10254 \
+      --cadvisor_port=4194 \
+      --log_cadvisor_usage=true \
+      --logtostderr=true \
+      --v=0
+      Restart=always
+      RestartSec=10
   - name: kube-proxy.service
     command: start
     content: |
       [Unit]
-      Description=kubelet
+      Description=Kubernetes Proxy
       Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-      After=docker.service
-      Requires=docker.service
-
+      Requires=kubelet.service
+      After=kubelet.service
       [Service]
-      TimeoutStartSec=0
-      ExecStartPre=-/usr/bin/docker kill kube-proxy
-      ExecStartPre=-/usr/bin/docker rm kube-proxy
-      ExecStart=/usr/bin/docker run --net=host --privileged=true -P \
-        -v "/usr:/usr" -v "/lib64:/lib64" \
-        -v "/etc/kubernetes:/etc/kubernetes" -v "/etc/os-release:/etc/os-release" \
-        -v "/usr/share/ca-certificates/:/etc/ssl/certs" \
-        --name kube-proxy {{.MasterIpAddr}}:5000/kube-proxy:0.18.2 /kube-proxy \
-        --master=http://{{.MasterIpAddr}}:8080 --v=0              
+      LimitNOFILE=infinity
+      ExecStart=/opt/bin/kube-proxy \
+      --master={{.MasterIpAddr}}:8080 \
+      --logtostderr=true \
+      --v=0
+      Restart=always
+      RestartSec=10           
   update:
     group: beta
     reboot-strategy: off

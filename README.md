@@ -5,15 +5,29 @@ This deployment is designed to work off-net once you cloned this repository and 
 
 ## Usage
 
-### Configure DHCP configuration
+```vagrant up master``` will deploy to CoreOS master vm which has the following services running:
+_note_** you will be prompted for your system password to enable NFS exports
 
-```vagrant up``` will deploy to CoreOS VMs, ```master``` and ```node-primary```.
+```bash
+dnsmasq
+configorator
+fleet
+kube-apiserver
+kube-control-manager
+kube-register
+```
+Run ```vagrant up node-primary``` once the ```master``` completes it's start process. 
+
+
+ and ```master``` and ```node-primary```.
 IP Address for those VMs along with all Nucs are fixed by the DHCP server. 
 
 ```bash
 master = 172.16.16.15
 node-primary = 172.16.16.16
 ```
+
+### Configure DHCP configuration
 
 It is strongly advised that you also assign static IPs to the baremetal systems that you are using.
 We are using dnsmasq for DHCP and as our tftp server(pxelinux).
