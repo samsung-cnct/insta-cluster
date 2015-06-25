@@ -19,8 +19,10 @@ Vagrant.configure(2) do |config|
   config.vm.define "master" do |master|
 
     master.vm.box = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_vagrant.box"
-
     master.vm.box_check_update = true
+
+    master.memory = 4048
+    master.cpus = 2
 
     master.ssh.insert_key = false
 
@@ -49,8 +51,10 @@ Vagrant.configure(2) do |config|
 
   config.vm.define "node-primary" do |node|
     node.vm.box = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_vagrant.box"
-
     node.vm.box_check_update = true
+
+    node.memory = 4048
+    node.cpus = 2
 
     node.ssh.insert_key = false
 
