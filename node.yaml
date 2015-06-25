@@ -3,7 +3,7 @@
 ---
 coreos:
   etcd2:
-    proxy: readonly
+    proxy: on
     data-dir: /var/lib/etcd2/
     listen-client-urls: http://127.0.0.1:2379,http://127.0.0.1:4001
     advertise-client-urls: http://127.0.0.1:2379,http://127.0.0.1:4001
@@ -38,9 +38,10 @@ coreos:
       - name: 50-docker-registry.conf
         content: |
           [Unit]
-          #After=early-docker.service
+          #After=early-docker.service, flanneld.service
           #Requires=early-docker.service
           [Service]
+          ExecStartPre=-/usr/bin/rm /var/run/docker.pid
           Environment=DOCKER_OPTS='--insecure-registry=172.16.16.15:5000'
   - name: setup-network-environment.service
     command: start
@@ -55,7 +56,6 @@ coreos:
       [Service]
       ExecStartPre=-/usr/bin/docker kill setup-network-environment
       ExecStart=/usr/bin/docker run --net host --privileged=true --name setup-network-environment 172.16.16.15:5000/setup-network-environment
-      ExecStop=-/usr/bin/docker rm setup-network-environment
       Type=oneshot
   - name: early-docker.service
     command: start
@@ -113,9 +113,12 @@ coreos:
         172.16.16.15:5000/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
 
       # Update docker options
-      ExecStartPost=/usr/bin/docker run --net=host --rm -v /run:/run \
+      ExecStartPost=/usr/bin/docker run --net=host --privileged=true --rm -v /run:/run \
         172.16.16.15:5000/flannel:${FLANNEL_VER} \
         /opt/bin/mk-docker-opts.sh -d /run/flannel_docker_opts.env -i
+      # Remove the old docker bridge because it remains for some reason
+      ExecStartPost=/usr/bin/ip link set dev docker0 down
+      ExecStartPost=/usr/sbin/brctl delbr docker0
   - name: kubelet.service
     command: start
     content: |
@@ -149,7 +152,7 @@ coreos:
       After=kubelet.service
 
       [Service]
-      ExecStart=/vagrant/service/kubectl create -f /vagrant/service/skydns/
+      ExecStart=/vagrant/bin/kubectl --server=http://172.16.16.15:8080 create -f /vagrant/services/skydns/
       Type=oneshot
   update:
     group: beta

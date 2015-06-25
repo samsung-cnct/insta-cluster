@@ -85,7 +85,10 @@ Vagrant.configure(2) do |config|
   system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/registry.tar.gz"
   system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATH}"
 
-  # Download the required version for kubectl for this cluster service deployemnt
-  system "wget -N -P services https://s3-us-west-2.amazonaws.com/insta-cluster/kubectl"
+  # Download the required version for kubectl and docker compose for this cluster service deployemnt
+  system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/kubectl"
+  system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/docker-compose"
 
+  # Make all files executable
+  system "chmod -R +x bin"
 end

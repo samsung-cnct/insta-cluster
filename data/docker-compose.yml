@@ -1,5 +1,5 @@
 dnsmasq:
-  image: "172.16.16.15:5000/dnsmasq-local"
+  image: "172.16.16.15:5000/dnsmasq"
   net: "host"
   restart: "always"
   volumes:
@@ -22,8 +22,9 @@ apiserver:
     --insecure-bind-address=0.0.0.0
     --insecure-port=8080
     --logtostderr=true
-    --service-cluster-ip-range=10.1.1.0/24
+    --service-cluster-ip-range=10.100.0.0/24
     --v=0
+    --runtime_config=api/v1beta3
   net: "host"
   restart: "always"
   volumes:

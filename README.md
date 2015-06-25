@@ -1,19 +1,54 @@
 # insta-cluster
+__This is PINNED to KUBERNETES RELEASE 0.18.2 and COREOS BETA 895.2.0__
+
+This deployment is designed to work off-net once you cloned this repository and performa an initial ```vagrant up``` to grab all the executables and binaries, the ones that weren't fit to print(not able to commit to git).
 
 ## Usage
 
 ### Configure DHCP configuration
 
 ```vagrant up``` will deploy to CoreOS VMs, ```master``` and ```node-primary```.
-IP Address for those VMs along with all Nucs are fixed by the DHCP server.
+IP Address for those VMs along with all Nucs are fixed by the DHCP server. 
 
 ```bash
 master = 172.16.16.15
-node-primary=172.16.16.16
+node-primary = 172.16.16.16
 ```
 
+It is strongly advised that you also assign static IPs to the baremetal systems that you are using.
 We are using dnsmasq for DHCP and as our tftp server(pxelinux).
-The configuration file is located at ```data/dnsmasq.conf.d/dnsmasq.conf```
+The configuration file is located at ```data/dnsmasq.conf.d/dnsmasq.conf```. Format is as follows
+
+```bash
+# Disable DNS
+port=0
+
+interface=eth1
+listen-address=172.16.16.15
+listen-address=127.0.0.1
+
+no-hosts
+
+# Enable dhcp and range
+dhcp-range=172.16.16.100,172.16.16.150,12h
+dhcp-option=1,255.255.255.0
+dhcp-option=6,8.8.8.8
+
+dhcp-boot=pxelinux.0,coreosboot,172.16.16.15
+
+# Here is where static IPs are assigned to devices via MAC addresses
+dhcp-host=b8:ae:ed:73:dc:2f, node-172-16-16-20, 172.16.16.20
+
+
+
+# enable pxelinux
+enable-tftp
+tftp-root=/var/tftpboot
+
+# Enable extended DHCP logging
+log-dhcp
+```
+
 This file will need to be updated with relevant cluster information prior to running ```vagrant up```.
 It's possible to update a running ```master``` but it's better not to deal with that now.
 
