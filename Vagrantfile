@@ -21,9 +21,6 @@ Vagrant.configure(2) do |config|
     master.vm.box = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_vagrant.box"
     master.vm.box_check_update = true
 
-    master.memory = 4048
-    master.cpus = 2
-
     master.ssh.insert_key = false
 
     master.vm.network "public_network", adapter: 2,  bridge: BRIDGE_INTERFACE,ip: "172.16.16.15"
@@ -36,6 +33,8 @@ Vagrant.configure(2) do |config|
     master.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
     #config.vm.synced_folder "data/" , "/vagrant_data", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
     master.vm.provider :virtualbox do |mvb, override|
+      mvb.memory = 4048
+      mvb.cpus = 2
       mvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
       mvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
@@ -66,6 +65,8 @@ Vagrant.configure(2) do |config|
     node.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
     
     node.vm.provider :virtualbox do |nvb, override|
+      nvb.memory = 4048
+      nvb.cpus = 2
       nvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
       nvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
