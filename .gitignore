@@ -2,3 +2,5 @@
 *.gz
 *.vmlinuz
 *.cpio
+*.crt
+*.key
