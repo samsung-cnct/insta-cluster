@@ -52,9 +52,6 @@ Vagrant.configure(2) do |config|
     node.vm.box = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_vagrant.box"
     node.vm.box_check_update = true
 
-    node.memory = 4048
-    node.cpus = 2
-
     node.ssh.insert_key = false
 
     node.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.16"
