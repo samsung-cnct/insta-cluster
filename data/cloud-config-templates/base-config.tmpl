@@ -36,6 +36,9 @@ coreos:
     metadata: "role=peon,kube-role=node"
     public-ip: {{.HostIpAddr}}
   units:
+  - name: update-engine-stub.service
+    command: stop
+    mask: true
   - name: systemd-timesyncd.service
     command: stop
     mask: true
@@ -96,19 +99,6 @@ coreos:
           [Service]
           ExecStartPre=-/usr/bin/rm /var/run/docker.pid
           Environment=DOCKER_OPTS='--insecure-registry={{.MasterIpAddr}}:5000'
-  - name: setup-network-environment.service
-    command: start
-    content: |
-      [Unit]
-      Description=Setup Network Environment
-      Documentation=https://github.com/kelseyhightower/setup-network-environment
-      Requires=network-online.target
-      After=network-online.target
-      Before=flanneld.service
-      [Service]
-      ExecStart=/opt/bin/setup-network-environment
-      RemainAfterExit=yes
-      Type=oneshot
   - name: early-docker.service
     command: start
     content: |
@@ -127,6 +117,19 @@ coreos:
 
       [Install]
       WantedBy=early-docker.target
+  - name: setup-network-environment.service
+    command: start
+    content: |
+      [Unit]
+      Description=Setup Network Environment
+      Documentation=https://github.com/kelseyhightower/setup-network-environment
+      Requires=network-online.target
+      After=network-online.target
+      Before=flanneld.service
+      [Service]
+      ExecStart=/opt/bin/setup-network-environment
+      RemainAfterExit=yes
+      Type=oneshot
   - name: flanneld.service
     command: start
     content: |    
@@ -197,6 +200,7 @@ coreos:
       --log_cadvisor_usage=true \
       --logtostderr=true \
       --pod-infra-container-image={{.MasterIpAddr}}:5000/pause:0.8.0 \
+      --enable-server \
       --v=0
       Restart=always
       RestartSec=10

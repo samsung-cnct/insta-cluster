@@ -35,7 +35,7 @@ Vagrant.configure(2) do |config|
     master.vm.provider :virtualbox do |mvb, override|
       mvb.memory = 4048
       mvb.cpus = 2
-      #mvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+      #mvb.customize ["modifyvm", :id, "--nictype2", "Am79C973"]
       mvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
 
@@ -61,10 +61,10 @@ Vagrant.configure(2) do |config|
 
     node.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
     
-    node.vm.provider :virtualbox do |nvb, override|
+    node.vm.provider :parallelsz do |nvb, override|
       nvb.memory = 4048
       nvb.cpus = 2
-      #nvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+      #nvb.customize ["modifyvm", :id, "--nictype2", "82545EM"]
       nvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
 
@@ -77,7 +77,7 @@ Vagrant.configure(2) do |config|
     end
   end
   
-  config.trigger.after [:up] do
+#  config.trigger.after [:up] do
     # Download the corresponding CoreOS image files for the the TFTP boot server
     # Will not download images if they are not newer then the existing files
     system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe.vmlinuz"
@@ -95,5 +95,5 @@ Vagrant.configure(2) do |config|
 
     # Make all files executable
     system "chmod -R +x bin"
-  end
+#  end
 end

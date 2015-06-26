@@ -20,18 +20,21 @@ apiserver:
   image: "172.16.16.15:5000/kube-apiserver:0.18.2"
   command: >
     --etcd-servers=http://172.16.16.15:2379
+    --external-hostname=172.16.16.15
     --insecure-bind-address=0.0.0.0
     --insecure-port=8080
     --logtostderr=true
     --service-cluster-ip-range=10.100.0.0/24
+    --cors-allowed-origins=.*
+    --kubelet_port=10250
     --v=0
     --runtime_config=api/v1beta3
   net: "host"
   restart: "always"
   volumes:
-    - "/etc/kubernetes:/etc/kubernetes"
-    - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
-    - "/vagrant/data/run/kubernetes:/var/run/kubernetes"
+    - "/etc:/etc"
+    - "/usr/share/ca-certificates:/etc/ssl/certs"
+    - "/var/run:/var/run"
 controllermanager:
   image: "172.16.16.15:5000/kube-controller-manager:0.18.2"
   command: >
@@ -42,8 +45,8 @@ controllermanager:
   net: "host"
   restart: "always"
   volumes:
-    - "/etc/kubernetes:/etc/kubernetes"
-    - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
+    - "/etc:/etc"
+    - "/usr/share/ca-certificates:/etc/ssl/certs"
 scheduler:
   image: "172.16.16.15:5000/kube-scheduler:0.18.2"
   command: >
@@ -53,15 +56,17 @@ scheduler:
   net: "host"
   restart: "always"
   volumes:
-    - "/etc/kubernetes:/etc/kubernetes"
-    - "/vagrant/data/share/ca-certificates:/etc/ssl/certs"
+    - "/etc:/etc"
+    - "/usr/share/ca-certificates:/etc/ssl/certs"
 register:
   image: "172.16.16.15:5000/kube-register:0.0.4"
   command: >
     --api-endpoint="http://172.16.16.15:8080"
-    --fleet-endpoint="http://172.16.16.15:4002"
-    --healthz-port="10255"
+    --fleet-endpoint=unix:///var/run/fleet.sock
+    --healthz-port="10254"
     --metadata="kube-role=node"
-    --sync-interval=10
+    --sync-interval=5
   net: "host"
   restart: "always"
+  volumes:
+  - "/var/run:/var/run"
