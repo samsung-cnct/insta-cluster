@@ -4,3 +4,6 @@
 *.cpio
 *.crt
 *.key
+*.conf
+*.crt
+*.key
