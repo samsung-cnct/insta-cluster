@@ -76,22 +76,24 @@ Vagrant.configure(2) do |config|
       EOF
     end
   end
+  
+  config.trigger.after [:up] do
+    # Download the corresponding CoreOS image files for the the TFTP boot server
+    # Will not download images if they are not newer then the existing files
+    system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe.vmlinuz"
+    system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe_image.cpio.gz"
 
-  # Download the corresponding CoreOS image files for the the TFTP boot server
-  # Will not download images if they are not newer then the existing files
-  system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe.vmlinuz"
-  system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe_image.cpio.gz"
+    # Download and extract the docker registry and the local registry docker images
+    # Will not download files if they are not newer then the existing files
+    system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
+    system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/registry.tar.gz"
+    system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATH}"
 
-  # Download and extract the docker registry and the local registry docker images
-  # Will not download files if they are not newer then the existing files
-  system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
-  system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/registry.tar.gz"
-  system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATH}"
+    # Download the required version for kubectl and docker compose for this cluster service deployemnt
+    system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/kubectl"
+    system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/docker-compose"
 
-  # Download the required version for kubectl and docker compose for this cluster service deployemnt
-  system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/kubectl"
-  system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/docker-compose"
-
-  # Make all files executable
-  system "chmod -R +x bin"
+    # Make all files executable
+    system "chmod -R +x bin"
+  end
 end
