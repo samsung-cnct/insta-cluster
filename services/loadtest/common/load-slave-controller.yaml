@@ -6,7 +6,7 @@ metadata:
   labels: 
     name: load-generator-slave
 spec: 
-  replicas: 2
+  replicas: 4
   selector: 
     name: load-generator-slave
   template: 
@@ -41,3 +41,5 @@ spec:
             - 
               name: INFLUXDB_NAME
               value: k8s
+      nodeSelector:
+        region: zone2

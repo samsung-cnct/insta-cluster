@@ -22,3 +22,5 @@ spec:
             - 
               containerPort: 9080
               protocol: TCP
+      nodeSelector:
+        region: zone3

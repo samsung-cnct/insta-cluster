@@ -50,3 +50,5 @@ spec:
             - 
               name: INFLUXDB_NAME
               value: k8s
+      nodeSelector:
+        region: zone1
