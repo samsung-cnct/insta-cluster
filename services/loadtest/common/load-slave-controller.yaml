@@ -42,4 +42,4 @@ spec:
               name: INFLUXDB_NAME
               value: k8s
       nodeSelector:
-        type: cassandra
+        region: zone2
