@@ -14,6 +14,16 @@ write_files:
       /usr/bin/chmod +x /opt/bin/kube-proxy
       /usr/bin/wget -N -P /opt/bin http://{{.MasterIpAddr}}/k8s/setup-network-environment
       /usr/bin/chmod +x /opt/bin/setup-network-environment
+  - path: /etc/ntp.conf
+    content: |
+      server {{.MasterIpAddr}}
+      server {{.MasterIpAddr}}
+
+      # - Allow only time queries, at a limited rate.
+      # - Allow all local queries (IPv4, IPv6)
+      restrict default nomodify nopeer noquery limited kod
+      restrict 127.0.0.1
+      restrict [::1]
 coreos:
   etcd2:
     proxy: on
@@ -26,6 +36,12 @@ coreos:
     metadata: "role=peon,kube-role=node"
     public-ip: {{.HostIpAddr}}
   units:
+  - name: systemd-timesyncd.service
+    command: stop
+    mask: true
+  - name: ntpd.service
+    command: start
+    enable: true
   - name: etcd2.service
     enable: true
     command: start
@@ -57,6 +73,18 @@ coreos:
           [Unit]
           Requires=flanneld.service
           After=flanneld.service
+  - name: docker-tcp.socket
+    command: start
+    enable: true
+    content: |
+      [Unit]
+      Description=Docker Socket for the API
+      [Socket]
+      ListenStream=0.0.0.0:4243
+      BindIPv6Only=both
+      Service=docker.service
+      [Install]
+      WantedBy=sockets.target
   - name: docker.service
     command: start
     drop-ins:
@@ -119,7 +147,7 @@ coreos:
       Environment="ETCD_SSL_DIR=/etc/ssl/etcd"
       LimitNOFILE=40000
       LimitNPROC=1048576
-      ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "vxlan"}}'
+      ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "udp", "Port": 7890}}'
       ExecStartPre=/sbin/modprobe ip_tables
       ExecStartPre=/usr/bin/mkdir -p /run/flannel
       ExecStartPre=/usr/bin/mkdir -p ${ETCD_SSL_DIR}

@@ -1,6 +1,18 @@
 #cloud-config
 
 ---
+write_files:
+  - path: /etc/ntp.conf
+    content: |
+      server 0.coreos.pool.ntp.org
+      server 3.coreos.pool.ntp.org
+
+      # Permit time synchronization with our time source, but do not
+      # permit the source to query or modify the service on this system.
+      restrict default kod nomodify notrap nopeer noquery
+      restrict -6 default kod nomodify notrap nopeer noquery
+      # Permit the nucs to query this time server
+      restrict 172.16.16.0 mask 255.255.255.0 nomodify notrap
 coreos:
   etcd2:
     name: etcd01
@@ -16,6 +28,12 @@ coreos:
   fleet:
     public-ip: 172.16.16.15
   units:
+  - name: systemd-timesyncd.service
+    command: stop
+    mask: true
+  - name: ntpd.service
+    command: start
+    enable: true
   - name: etcd2.service
     enable: true
     command: start

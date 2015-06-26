@@ -8,7 +8,7 @@ COREOS_CHANNEL = "beta"
 COREOS_RELEASE = "695.2.0"
 IMAGE_PATH = "data/tftpboot"
 DATA_PATH = "data/"
-BRIDGE_INTERFACE = '' || 'en0: Ethernet 1'    #this needs to be the extact name of the bridge interface
+BRIDGE_INTERFACE = 'en0: Ethernet 1'    #this needs to be the extact name of the bridge interface
 
 
 
@@ -35,7 +35,7 @@ Vagrant.configure(2) do |config|
     master.vm.provider :virtualbox do |mvb, override|
       mvb.memory = 4048
       mvb.cpus = 2
-      mvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+      #mvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
       mvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
 
@@ -48,7 +48,7 @@ Vagrant.configure(2) do |config|
     end
   end
 
-  config.vm.define "node-primary" do |node|
+  config.vm.define "node-01" do |node|
     node.vm.box = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_vagrant.box"
     node.vm.box_check_update = true
 
@@ -57,14 +57,14 @@ Vagrant.configure(2) do |config|
     node.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.16"
     node.vm.network "private_network", adapter: 3, ip: "192.168.100.11" 
 
-    node.vm.hostname = "node-primary"
+    node.vm.hostname = "node-01"
 
     node.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
     
     node.vm.provider :virtualbox do |nvb, override|
       nvb.memory = 4048
       nvb.cpus = 2
-      nvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+      #nvb.customize ["modifyvm", :id, "--nictype2", "virtio"]
       nvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
 
