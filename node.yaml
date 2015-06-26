@@ -57,6 +57,18 @@ coreos:
           [Unit]
           Requires=flanneld.service
           After=flanneld.service
+  - name: docker-tcp.socket
+    command: start
+    enable: true
+    content: |
+      [Unit]
+      Description=Docker Socket for the API
+      [Socket]
+      ListenStream=0.0.0.0:4243
+      BindIPv6Only=both
+      Service=docker.service
+      [Install]
+      WantedBy=sockets.target          
   - name: docker.service
     command: start
     drop-ins:
@@ -68,20 +80,6 @@ coreos:
           [Service]
           ExecStartPre=-/usr/bin/rm /var/run/docker.pid
           Environment=DOCKER_OPTS='--insecure-registry=172.16.16.15:5000'
-  - name: setup-network-environment.service
-    command: start
-    content: |
-      [Unit]
-      Description=Setup Network Environment
-      Documentation=https://github.com/kelseyhightower/setup-network-environment
-      Requires=network-online.target
-      After=network-online.target
-      Before=flanneld.service
-
-      [Service]
-      ExecStartPre=-/usr/bin/docker kill setup-network-environment
-      ExecStart=/usr/bin/docker run --net host --privileged=true --name setup-network-environment 172.16.16.15:5000 /setup-network-environment
-      Type=oneshot
   - name: early-docker.service
     command: start
     content: |
@@ -133,7 +131,7 @@ coreos:
       Environment="ETCD_SSL_DIR=/etc/ssl/etcd"
       LimitNOFILE=40000
       LimitNPROC=1048576
-      ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "vxlan"}}'
+      ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "udp", "Port":7890}}'
       ExecStartPre=/sbin/modprobe ip_tables
       ExecStartPre=/usr/bin/mkdir -p /run/flannel
       ExecStartPre=/usr/bin/mkdir -p ${ETCD_SSL_DIR}
