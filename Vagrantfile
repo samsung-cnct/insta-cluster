@@ -31,11 +31,9 @@ Vagrant.configure(2) do |config|
     master.vm.hostname = "master"
     
     master.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
-    #config.vm.synced_folder "data/" , "/vagrant_data", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
     master.vm.provider :virtualbox do |mvb, override|
       mvb.memory = 4048
       mvb.cpus = 2
-      #mvb.customize ["modifyvm", :id, "--nictype2", "Am79C973"]
       mvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
 
@@ -64,7 +62,6 @@ Vagrant.configure(2) do |config|
     node.vm.provider :parallelsz do |nvb, override|
       nvb.memory = 4048
       nvb.cpus = 2
-      #nvb.customize ["modifyvm", :id, "--nictype2", "82545EM"]
       nvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
     end
 

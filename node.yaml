@@ -25,7 +25,13 @@ coreos:
     etcd-servers: http://172.16.16.15:2379
     metadata: "role=peon,kube-role=node"
     public-ip: 172.16.16.16
+  flannel:
+    etcd-endpoints: http://172.16.16.15:2379
+    interface: eth1
   units:
+  - name: update-engine-stub.service
+    command: stop
+    mask: true
   - name: etcd2.service
     enable: true
     command: start
@@ -34,9 +40,6 @@ coreos:
     enable: false
   - name: fleet.service
     command: start
-  - flannel:
-      etcd-endpoints: http://172.16.16.15:2379
-      interface: 172.16.16.16
   - name: load_k8s.service
     command: start
     content: |
@@ -131,7 +134,7 @@ coreos:
       Environment="ETCD_SSL_DIR=/etc/ssl/etcd"
       LimitNOFILE=40000
       LimitNPROC=1048576
-      ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "udp", "Port":7890}}'
+      ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "udp", "Port": 7890}}'
       ExecStartPre=/sbin/modprobe ip_tables
       ExecStartPre=/usr/bin/mkdir -p /run/flannel
       ExecStartPre=/usr/bin/mkdir -p ${ETCD_SSL_DIR}
@@ -181,6 +184,7 @@ coreos:
       --log_cadvisor_usage=true \
       --logtostderr=true \
       --pod-infra-container-image=172.16.16.15:5000/pause:0.8.0 \
+      --enable-server=true \
       --v=0
       Restart=always
       RestartSec=10
