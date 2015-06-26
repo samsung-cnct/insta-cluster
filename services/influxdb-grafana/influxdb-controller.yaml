@@ -1,0 +1,29 @@
+apiVersion: v1beta3
+kind: ReplicationController
+metadata:
+  name: influxdb-v1
+  namespace: default
+  labels:
+    k8s-app: InfluxDB
+    version: v1
+    kubernetes.io/cluster-service: "true"
+spec:
+  replicas: 1
+  selector:
+    k8s-app: InfluxDB
+    version: v1
+  template:
+    metadata:
+      labels:
+        k8s-app: InfluxDB
+        version: v1
+        kubernetes.io/cluster-service: "true"
+    spec:
+      containers:
+        - image: 172.16.16.15:5000/influxdb
+          name: influxdb
+          ports:
+            - containerPort: 8083
+              hostPort: 8083
+            - containerPort: 8086
+              hostPort: 8086

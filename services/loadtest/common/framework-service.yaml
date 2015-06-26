@@ -1,0 +1,15 @@
+---
+kind: Service
+apiVersion: v1beta3
+metadata: 
+  name: framework
+  labels: 
+    name: framework
+spec: 
+  ports: 
+    - 
+      port: 9080
+      targetPort: 9080
+      protocol: TCP
+  selector: 
+    name: framework

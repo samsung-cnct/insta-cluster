@@ -1,0 +1,43 @@
+---
+kind: ReplicationController
+apiVersion: v1beta3
+metadata: 
+  name: load-generator-slave
+  labels: 
+    name: load-generator-slave
+spec: 
+  replicas: 2
+  selector: 
+    name: load-generator-slave
+  template: 
+    metadata: 
+      labels: 
+        name: load-generator-slave
+    spec: 
+      containers: 
+        - 
+          name: load-generator-slave
+          image: 172.16.16.15:5000/trogdor-load-generator
+          command: 
+            - locust
+            - -f
+            - /scripts/locustfile.py
+            - --slave
+            - --master-host=load-generator-master
+            - --host=http://framework:9080
+          env: 
+            - 
+              name: INFLUXDB_HOST
+              value: influxdb
+            - 
+              name: INFLUXDB_PORT
+              value: "8086"
+            - 
+              name: INFLUXDB_USER
+              value: root
+            - 
+              name: INFLUXDB_PASSWORD
+              value: root
+            - 
+              name: INFLUXDB_NAME
+              value: k8s
