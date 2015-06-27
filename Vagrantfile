@@ -59,7 +59,7 @@ Vagrant.configure(2) do |config|
 
     node.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
     
-    node.vm.provider :parallelsz do |nvb, override|
+    node.vm.provider :virtualbox do |nvb, override|
       nvb.memory = 4048
       nvb.cpus = 2
       nvb.customize ["controlvm", :id, "nicpromisc2", "allow-all"]
