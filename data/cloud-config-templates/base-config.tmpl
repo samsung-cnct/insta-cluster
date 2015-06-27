@@ -150,7 +150,7 @@ coreos:
       Environment="ETCD_SSL_DIR=/etc/ssl/etcd"
       LimitNOFILE=40000
       LimitNPROC=1048576
-      ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "udp", "Port": 7890}}'
+      ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "vxlan"}}'
       ExecStartPre=/sbin/modprobe ip_tables
       ExecStartPre=/usr/bin/mkdir -p /run/flannel
       ExecStartPre=/usr/bin/mkdir -p ${ETCD_SSL_DIR}
