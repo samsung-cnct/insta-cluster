@@ -13,4 +13,4 @@ spec:
   selector:
     k8s-app: Grafana
   publicIPs:
-    - 172.16.16.20
+    - 172.16.16.16
