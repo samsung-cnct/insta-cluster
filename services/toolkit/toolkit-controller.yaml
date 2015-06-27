@@ -1,0 +1,20 @@
+---
+kind: ReplicationController
+apiVersion: v1beta3
+metadata: 
+  name: toolkit
+  labels: 
+    name: toolkit
+spec: 
+  replicas: 5
+  selector: 
+    name: toolkit
+  template: 
+    metadata: 
+      labels: 
+        name: toolkit
+    spec: 
+      containers: 
+        - 
+          name: toolkit
+          image: 172.16.16.15:5000/l33ch/toolkit:0.2

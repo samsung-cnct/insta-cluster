@@ -4,7 +4,18 @@ dnsmasq:
   restart: "always"
   volumes:
     - "/vagrant/data/dnsmasq.conf.d:/etc/dnsmasq.conf.d"
-    - "/vagrant/data/tftpboot:/var/tftpboot"
+tftp:
+  image: quay.io/l337ch/tftp-hpa
+  net: "host"
+  restart: "always"
+  volumes:
+    - "/vagrant/data/tftpboot:/tftpboot"
+  command:
+    --foreground
+    --address 0.0.0.0:69
+    --verbose
+    --blocksize 8192
+    -s /tftpboot
 configorator:
   image: "172.16.16.15:5000/configorator:stable"
   net: "host"

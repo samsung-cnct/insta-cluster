@@ -1,0 +1,14 @@
+kind: Service
+apiVersion: v1beta3
+metadata: 
+  name: toolkit
+  labels: 
+    name: toolkit
+spec: 
+  ports: 
+    - 
+      port: 8888
+      targetPort: 80
+      protocol: TCP
+  selector: 
+    name: framework
