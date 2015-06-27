@@ -10,10 +10,20 @@ IMAGE_PATH = "data/tftpboot"
 DATA_PATH = "data/"
 BRIDGE_INTERFACE = 'en0: Ethernet 1'    #this needs to be the extact name of the bridge interface
 
-
-
 MASTER_USER_DATA = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'master.yaml'))
 NODE_USER_DATA = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'node.yaml'))
+
+required_plugins = %w(vagrant-triggers)
+
+required_plugins.each do |plugin|
+  need_restart = false
+  unless Vagrant.has_plugin? plugin
+    system "vagrant plugin install #{plugin}"
+    need_restart = true
+  end
+  exec "vagrant #{ARGV.join(' ')}" if need_restart
+end
+
 Vagrant.configure(2) do |config|
 
   config.vm.define "master" do |master|
@@ -31,6 +41,7 @@ Vagrant.configure(2) do |config|
     master.vm.hostname = "master"
     
     master.vm.synced_folder ".", "/vagrant", disabled: false, type: "nfs", nfs_udp: true, mount_options: ['rsize=32768', 'wsize=32768', 'nolock']
+    
     master.vm.provider :virtualbox do |mvb, override|
       mvb.memory = 4048
       mvb.cpus = 2
@@ -74,7 +85,7 @@ Vagrant.configure(2) do |config|
     end
   end
   
-#  config.trigger.after [:up] do
+  config.trigger.after [:ssh_config] do
     # Download the corresponding CoreOS image files for the the TFTP boot server
     # Will not download images if they are not newer then the existing files
     system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe.vmlinuz"
@@ -92,5 +103,5 @@ Vagrant.configure(2) do |config|
 
     # Make all files executable
     system "chmod -R +x bin"
-#  end
+  end
 end
