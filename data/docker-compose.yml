@@ -65,7 +65,7 @@ register:
     --fleet-endpoint=unix:///var/run/fleet.sock
     --healthz-port="10254"
     --metadata="kube-role=node"
-    --sync-interval=5
+    --sync-interval=20
   net: "host"
   restart: "always"
   volumes:
