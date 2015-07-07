@@ -11,7 +11,7 @@ To start off you'll need to configure your Mac OS to allow ip forwarding by runn
 sudo sysctl -w net.inet.ip.forwarding=1
 ```
 
-Create the ```master``` node first to ensure that all services are available for the ```node-primary```. 
+Create the ```master``` node first to ensure that all services are available for the ```node-01```. 
 
 ```vagrant up master``` will deploy to CoreOS master vm which has the following services running:
 _note_** you will be prompted for your system password to enable NFS exports
@@ -24,15 +24,15 @@ kube-apiserver
 kube-control-manager
 kube-register
 ```
-Run ```vagrant up node-primary``` once the ```master``` completes it's start process. 
+Run ```vagrant up node-01``` once the ```master``` completes it's start process. 
 
 
- and ```master``` and ```node-primary```.
+ and ```master``` and ```node-01```.
 IP Address for those VMs along with all Nucs are fixed by the DHCP server. 
 
 ```bash
 master = 172.16.16.15
-node-primary = 172.16.16.16
+node-01 = 172.16.16.16
 ```
 
 ### Configure DHCP configuration
@@ -60,12 +60,6 @@ dhcp-boot=pxelinux.0,coreosboot,172.16.16.15
 
 # Here is where static IPs are assigned to devices via MAC addresses
 dhcp-host=b8:ae:ed:73:dc:2f, node-172-16-16-20, 172.16.16.20
-
-
-
-# enable pxelinux
-enable-tftp
-tftp-root=/var/tftpboot
 
 # Enable extended DHCP logging
 log-dhcp
