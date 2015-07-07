@@ -85,7 +85,7 @@ Vagrant.configure(2) do |config|
     end
   end
   
-  config.trigger.after [:ssh_config] do
+  config.trigger.after [:up] do
     # Download the corresponding CoreOS image files for the the TFTP boot server
     # Will not download images if they are not newer then the existing files
     system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe.vmlinuz"

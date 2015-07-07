@@ -101,7 +101,7 @@ coreos:
 
       [Service]
       ExecStart=/usr/bin/docker load --input=/vagrant/data/docker-registry.tar
-      ExecStartPost=/usr/bin/docker tag ec94325cd2c4 registry:latest
+      ExecStartPost=/usr/bin/docker tag -f ec94325cd2c4 registry:latest
       RemainAfterExit=yes
       Type=oneshot
   - name: docker-registry.service
@@ -109,6 +109,7 @@ coreos:
     content: |
       [Unit]
       Description=Start docker registry container
+      Requires=load-registry.service
       After=load-registry.service
 
       [Service]
