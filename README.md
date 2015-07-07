@@ -3,13 +3,17 @@ __This is PINNED to KUBERNETES RELEASE 0.18.2 and COREOS BETA 895.2.0__
 
 This deployment is designed to work off-net once you cloned this repository and performa an initial ```vagrant up``` to grab all the executables and binaries, the ones that weren't fit to print(not able to commit to git).
 
-## Usage
-
+## Prerequisites
 To start off you'll need to configure your Mac OS to allow ip forwarding by running
 
 ```bash
 sudo sysctl -w net.inet.ip.forwarding=1
 ```
+
+You will also need to enable a network interface on our workstation with and IP in the _172.16.16.0/24_ address space(use 172.16.16.10/32)
+Make sure you can ping that interfaces IP before proceeding. If pings don't work you may have a local firewall blocking traffic.
+
+## Usage
 
 Create the ```master``` node first to ensure that all services are available for the ```node-01```. 
 
