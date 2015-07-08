@@ -1,11 +1,11 @@
 dnsmasq:
-  image: "172.16.16.15:5000/dnsmasq:stable"
+  image: "172.16.16.15:5050/insta/dnsmasq"
   net: "host"
   restart: "always"
   volumes:
     - "/vagrant/data/dnsmasq.conf.d:/etc/dnsmasq.conf.d"
 tftp:
-  image: quay.io/l337ch/tftp-hpa
+  image: 172.16.16.15:5050/insta/tftp-hpa
   net: "host"
   restart: "always"
   volumes:
@@ -17,18 +17,18 @@ tftp:
     --blocksize 8192
     -s /tftpboot
 configorator:
-  image: "172.16.16.15:5000/configorator:stable"
+  image: "172.16.16.15:5050/insta/configorator"
   net: "host"
   restart: "always"
   volumes:
     - "/vagrant/data/cloud-config-templates:/templates:ro"
-    - "/vagrant/data/k8s:/k8s"
+    - "/vagrant/data/k8s:/k8s:ro"
   command: run web
     --port 80
     --template templates
     --master 172.16.16.15
 apiserver:
-  image: "172.16.16.15:5000/kube-apiserver:0.18.2"
+  image: "172.16.16.15:5050/insta/kube-apiserver:0.20.2"
   command: >
     --etcd-servers=http://172.16.16.15:2379
     --external-hostname=172.16.16.15
@@ -47,10 +47,11 @@ apiserver:
     - "/usr/share/ca-certificates:/etc/ssl/certs"
     - "/var/run:/var/run"
 controllermanager:
-  image: "172.16.16.15:5000/kube-controller-manager:0.18.2"
+  image: "172.16.16.15:5050/insta/kube-controller-manager:0.20.2"
   command: >
     --logtostderr=true
     --master=http://172.16.16.15:8080
+    --node-monitor-grace-period=20s
     --cloud-provider=""
     --v=0
   net: "host"
@@ -59,7 +60,7 @@ controllermanager:
     - "/etc:/etc"
     - "/usr/share/ca-certificates:/etc/ssl/certs"
 scheduler:
-  image: "172.16.16.15:5000/kube-scheduler:0.18.2"
+  image: "172.16.16.15:5050/insta/kube-scheduler:0.20.2"
   command: >
     --master=http://172.16.16.15:8080
     --logtostderr=true
@@ -70,13 +71,13 @@ scheduler:
     - "/etc:/etc"
     - "/usr/share/ca-certificates:/etc/ssl/certs"
 register:
-  image: "172.16.16.15:5000/kube-register:0.0.4"
+  image: "172.16.16.15:5050/insta/kube-register:0.0.4"
   command: >
     --api-endpoint="http://172.16.16.15:8080"
     --fleet-endpoint=unix:///var/run/fleet.sock
     --healthz-port="10254"
     --metadata="kube-role=node"
-    --sync-interval=20
+    --sync-interval=5
   net: "host"
   restart: "always"
   volumes:

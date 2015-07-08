@@ -2,7 +2,7 @@
 
 ---
 write_files:
-  - path: /opt/bin/load_k8s.sh
+  - path: /opt/bin/load-k8s.sh
     owner: root
     content: |
       #!/usr/bin/bash
@@ -35,12 +35,12 @@ coreos:
   - name: etcd2.service
     enable: true
     command: start
-    # Disabling etcd may not be necessary but in case it is...
-  - name: etcd.service
-    enable: false
+  # Disabling etcd may not be necessary but in case it is...
+  #- name: etcd.service
+  #  enable: false
   - name: fleet.service
     command: start
-  - name: load_k8s.service
+  - name: load-k8s.service
     command: start
     content: |
       [Unit]
@@ -48,8 +48,8 @@ coreos:
       Wants=network-online.target
       After=network-online.target
       [Service]
-      ExecStartPre=/usr/bin/chmod +x /opt/bin/load_k8s.sh
-      ExecStart=/usr/bin/bash /opt/bin/load_k8s.sh
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/load-k8s.sh
+      ExecStart=/usr/bin/bash /opt/bin/load-k8s.sh
       RemainAfterExit=true
       Type=oneshot
   - name: docker.socket
@@ -82,7 +82,7 @@ coreos:
           #Requires=early-docker.service
           [Service]
           ExecStartPre=-/usr/bin/rm /var/run/docker.pid
-          Environment=DOCKER_OPTS='--insecure-registry=172.16.16.15:5000'
+          Environment='DOCKER_OPTS= --insecure-registry=172.16.16.15:5000 --insecure-registry=172.16.16.15:5050'
   - name: early-docker.service
     command: start
     content: |
@@ -97,7 +97,7 @@ coreos:
       MountFlags=slave
       LimitNOFILE=1048576
       LimitNPROC=1048576
-      ExecStart=/usr/lib/coreos/dockerd --daemon --insecure-registry=172.16.16.15:5000 --host=fd:// --bridge=none --iptables=false --ip-masq=false --graph=/var/li
+      ExecStart=/usr/lib/coreos/dockerd --daemon --insecure-registry=172.16.16.15:5050 --host=fd:// --bridge=none --iptables=false --ip-masq=false --graph=/var/li
 
       [Install]
       WantedBy=early-docker.target
@@ -149,11 +149,11 @@ coreos:
         --env-file=/run/flannel/options.env \
         --volume=/usr/share/ca-certificates:/etc/ssl/certs:ro \
         --volume=${ETCD_SSL_DIR}:/etc/ssl/etcd:ro \
-        172.16.16.15:5000/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
+        172.16.16.15:5050/insta/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
 
       # Update docker options
       ExecStartPost=/usr/bin/docker run --net=host --privileged=true --rm -v /run:/run \
-        172.16.16.15:5000/flannel:${FLANNEL_VER} \
+        172.16.16.15:5050/insta/flannel:${FLANNEL_VER} \
         /opt/bin/mk-docker-opts.sh -d /run/flannel_docker_opts.env -i
       # Remove the old docker bridge because it remains for some reason
       ExecStartPost=/usr/bin/ip link set dev docker0 down
@@ -183,7 +183,7 @@ coreos:
       --cadvisor_port=4194 \
       --log_cadvisor_usage=true \
       --logtostderr=true \
-      --pod-infra-container-image=172.16.16.15:5000/pause:0.8.0 \
+      --pod-infra-container-image=172.16.16.15:5050/insta/pause:0.8.0 \
       --enable-server=true \
       --v=0
       Restart=always
