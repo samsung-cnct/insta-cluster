@@ -28,7 +28,7 @@ configorator:
     --template templates
     --master 172.16.16.15
 apiserver:
-  image: "172.16.16.15:5050/insta/kube-apiserver:0.20.2"
+  image: "172.16.16.15:5050/insta/kube-apiserver:1.0.0"
   command: >
     --etcd-servers=http://172.16.16.15:2379
     --external-hostname=172.16.16.15
@@ -39,7 +39,7 @@ apiserver:
     --cors-allowed-origins=.*
     --kubelet_port=10250
     --v=0
-    --runtime_config=api/v1beta3
+    --runtime_config=api/v1
   net: "host"
   restart: "always"
   volumes:
@@ -47,7 +47,7 @@ apiserver:
     - "/usr/share/ca-certificates:/etc/ssl/certs"
     - "/var/run:/var/run"
 controllermanager:
-  image: "172.16.16.15:5050/insta/kube-controller-manager:0.20.2"
+  image: "172.16.16.15:5050/insta/kube-controller-manager:1.0.0"
   command: >
     --logtostderr=true
     --master=http://172.16.16.15:8080
@@ -60,7 +60,7 @@ controllermanager:
     - "/etc:/etc"
     - "/usr/share/ca-certificates:/etc/ssl/certs"
 scheduler:
-  image: "172.16.16.15:5050/insta/kube-scheduler:0.20.2"
+  image: "172.16.16.15:5050/insta/kube-scheduler:1.0.0"
   command: >
     --master=http://172.16.16.15:8080
     --logtostderr=true

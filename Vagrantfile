@@ -93,7 +93,7 @@ Vagrant.configure(2) do |config|
 
     # Download and extract the docker registry and the local registry docker images
     # Will not download files if they are not newer then the existing files
-    system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
+    #system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
     system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/private.tar.gz"
     system "tar -zxf #{DATA_PATH}private.tar.gz -C #{DATA_PATH}"
 

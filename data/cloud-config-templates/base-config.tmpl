@@ -97,8 +97,8 @@ coreos:
           #After=early-docker.service, flanneld.service
           #Requires=early-docker.service
           [Service]
-          ExecStartPre=-/usr/bin/rm /var/run/docker.pid
-          Environment=DOCKER_OPTS='--insecure-registry={{.MasterIpAddr}}:5000'
+          #ExecStartPre=-/usr/bin/rm /var/run/docker.pid
+          Environment='DOCKER_OPTS=--insecure-registry={{.MasterIpAddr}}:5000 --insecure-registry={{.MasterIpAddr}}:5050'
   - name: early-docker.service
     command: start
     content: |
@@ -113,7 +113,7 @@ coreos:
       MountFlags=slave
       LimitNOFILE=1048576
       LimitNPROC=1048576
-      ExecStart=/usr/lib/coreos/dockerd --daemon --insecure-registry={{.MasterIpAddr}}:5000 --host=fd:// --bridge=none --iptables=false --ip-masq=false --graph=/var/li
+      ExecStart=/usr/lib/coreos/dockerd --daemon --insecure-registry={{.MasterIpAddr}}:5000 --insecure-registry={{.MasterIpAddr}}:5050 --host=fd:// --bridge=none --iptables=false --ip-masq=false --graph=/var/li
 
       [Install]
       WantedBy=early-docker.target
@@ -165,11 +165,11 @@ coreos:
         --env-file=/run/flannel/options.env \
         --volume=/usr/share/ca-certificates:/etc/ssl/certs:ro \
         --volume=${ETCD_SSL_DIR}:/etc/ssl/etcd:ro \
-        {{.MasterIpAddr}}:5000/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
+        {{.MasterIpAddr}}:5050/insta/flannel:${FLANNEL_VER} /opt/bin/flanneld --ip-masq=true
 
       # Update docker options
       ExecStartPost=/usr/bin/docker run --net=host --privileged=true --rm -v /run:/run \
-        {{.MasterIpAddr}}:5000/flannel:${FLANNEL_VER} \
+        {{.MasterIpAddr}}:5050/insta/flannel:${FLANNEL_VER} \
         /opt/bin/mk-docker-opts.sh -d /run/flannel_docker_opts.env -i
       # Remove the old docker bridge because it remains for some reason
       ExecStartPost=/usr/bin/ip link set dev docker0 down
@@ -199,7 +199,7 @@ coreos:
       --cadvisor_port=4194 \
       --log_cadvisor_usage=true \
       --logtostderr=true \
-      --pod-infra-container-image={{.MasterIpAddr}}:5000/pause:0.8.0 \
+      --pod-infra-container-image={{.MasterIpAddr}}:5050/insta/pause:0.8.0 \
       --enable-server \
       --v=0
       Restart=always
