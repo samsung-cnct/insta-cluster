@@ -1,6 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require 'yaml'
+
 VAGRANTFILE_API_VERSION = "2"
 Vagrant.require_version ">= 1.7.2"
 
@@ -8,12 +10,10 @@ COREOS_CHANNEL = "alpha"
 COREOS_RELEASE = "current"
 IMAGE_PATH = "data/tftpboot"
 DATA_PATH = "data/"
-BRIDGE_INTERFACE = 'en0: Ethernet 1'    #this needs to be the extact name of the bridge interface
-
 MASTER_USER_DATA = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'master.yaml'))
 NODE_USER_DATA = File.expand_path(File.join(File.expand_path(File.dirname(__FILE__)), 'node.yaml'))
 
-required_plugins = %w(vagrant-triggers)
+required_plugins = %w(vagrant-triggers vagrant-aws)
 
 required_plugins.each do |plugin|
   need_restart = false
@@ -33,7 +33,7 @@ Vagrant.configure(2) do |config|
 
     master.ssh.insert_key = false
 
-    master.vm.network "public_network", adapter: 2,  bridge: BRIDGE_INTERFACE,ip: "172.16.16.15"
+    master.vm.network "public_network", adapter: 2,  bridge: '', ip: "172.16.16.15"
     master.vm.network "private_network", adapter: 3, ip: "192.168.100.10" 
 
     master.vm.network "forwarded_port", guest: 2375, host: 2375
@@ -55,6 +55,27 @@ Vagrant.configure(2) do |config|
         mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/
       EOF
     end
+
+    # Download and install dependencies
+    config.trigger.after [:up] do
+      # Download the corresponding CoreOS image files for the the TFTP boot server
+      # Will not download images if they are not newer then the existing files
+      system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe.vmlinuz"
+      system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe_image.cpio.gz"
+
+      # Download and extract the docker registry and the local registry docker images
+      # Will not download files if they are not newer then the existing files
+      system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
+      system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/private.tar.gz"
+      system "tar -zxf #{DATA_PATH}private.tar.gz -C #{DATA_PATH}"
+
+      # Download the required version for kubectl and docker compose for this cluster service deployemnt
+      system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/kubectl"
+      system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/docker-compose"
+
+      # Make all files executable
+      system "chmod -R +x bin"
+    end
   end
 
   config.vm.define "node-01" do |node|
@@ -63,7 +84,7 @@ Vagrant.configure(2) do |config|
 
     node.ssh.insert_key = false
 
-    node.vm.network "public_network", adapter: 2, bridge: 'en0: Ethernet 1', ip: "172.16.16.16"
+    node.vm.network "public_network", adapter: 2, bridge: '', ip: "172.16.16.16"
     node.vm.network "private_network", adapter: 3, ip: "192.168.100.11" 
 
     node.vm.hostname = "node-01"
@@ -84,24 +105,11 @@ Vagrant.configure(2) do |config|
       EOF
     end
   end
-  
-  config.trigger.after [:up] do
-    # Download the corresponding CoreOS image files for the the TFTP boot server
-    # Will not download images if they are not newer then the existing files
-    system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe.vmlinuz"
-    system "wget -N -P #{IMAGE_PATH} http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_RELEASE}/coreos_production_pxe_image.cpio.gz"
 
-    # Download and extract the docker registry and the local registry docker images
-    # Will not download files if they are not newer then the existing files
-    #system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
-    system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/private.tar.gz"
-    system "tar -zxf #{DATA_PATH}private.tar.gz -C #{DATA_PATH}"
-
-    # Download the required version for kubectl and docker compose for this cluster service deployemnt
-    system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/kubectl"
-    system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/docker-compose"
-
-    # Make all files executable
-    system "chmod -R +x bin"
+  config.vm.define "aws-01", autostart: false do |aws_01|
   end
+
+  config.vm.define "aws_02", autostart: false do |aws_02|
+  end
+
 end
