@@ -4,8 +4,8 @@
 VAGRANTFILE_API_VERSION = "2"
 Vagrant.require_version ">= 1.7.2"
 
-COREOS_CHANNEL = "beta"
-COREOS_RELEASE = "695.2.0"
+COREOS_CHANNEL = "alpha"
+COREOS_RELEASE = "current"
 IMAGE_PATH = "data/tftpboot"
 DATA_PATH = "data/"
 BRIDGE_INTERFACE = 'en0: Ethernet 1'    #this needs to be the extact name of the bridge interface
@@ -93,9 +93,9 @@ Vagrant.configure(2) do |config|
 
     # Download and extract the docker registry and the local registry docker images
     # Will not download files if they are not newer then the existing files
-    system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
-    system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/registry.tar.gz"
-    system "tar -zxf #{DATA_PATH}registry.tar.gz -C #{DATA_PATH}"
+    #system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/docker-registry.tar"
+    system "wget -N -P #{DATA_PATH} https://s3-us-west-2.amazonaws.com/insta-cluster/private.tar.gz"
+    system "tar -zxf #{DATA_PATH}private.tar.gz -C #{DATA_PATH}"
 
     # Download the required version for kubectl and docker compose for this cluster service deployemnt
     system "wget -N -P bin https://s3-us-west-2.amazonaws.com/insta-cluster/kubectl"

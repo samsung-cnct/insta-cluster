@@ -79,7 +79,7 @@ coreos:
           After=flanneld.service
 
           [Service]
-          Environment=DOCKER_OPTS='--insecure-registry=172.16.16.15:5000'
+          Environment='DOCKER_OPTS=--insecure-registry=172.16.16.15:5000 --insecure-registry=172.16.16.15:5050'
   - name: flanneld.service
     command: start
     drop-ins:
@@ -115,10 +115,26 @@ coreos:
       [Service]
       ExecStartPre=-/usr/bin/docker kill registry
       ExecStartPre=-/usr/bin/docker rm registry
-      ExecStart=/usr/bin/docker run --net=host -P -v "/vagrant/data:/vagrant/data" \
+      ExecStart=/usr/bin/docker run -p 5000:5000 -v "/vagrant/data:/vagrant/data" \
       -e "REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/vagrant/data/registry" \
       -e "REGISTRY_HTTP_ADDR=0.0.0.0:5000" \
       --name registry registry
+      Restart=always
+      RestartSec=10
+  - name: docker-priv-registry.service
+    command: start
+    content: |
+      [Unit]
+      Description=Start docker private registry container
+      After=load-registry.service
+
+      [Service]
+      ExecStartPre=-/usr/bin/docker kill priv-registry
+      ExecStartPre=-/usr/bin/docker rm priv-registry
+      ExecStart=/usr/bin/docker run -p 5050:5050 -v "/vagrant/data:/vagrant/data" \
+      -e "REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/vagrant/data/private" \
+      -e "REGISTRY_HTTP_ADDR=0.0.0.0:5050" \
+      --name priv-registry registry
       Restart=always
       RestartSec=10
   - name: docker-compose.service
@@ -126,7 +142,7 @@ coreos:
     content: |
       [Unit]
       Description=Install and run docker compose
-      After=docker-registry.service
+      After=docker-priv-registry.service
 
       [Service]
       ExecStart=/vagrant/bin/docker-compose -f /vagrant/data/docker-compose.yml up --allow-insecure-ssl -d
