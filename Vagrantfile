@@ -105,11 +105,4 @@ Vagrant.configure(2) do |config|
       EOF
     end
   end
-
-  config.vm.define "aws-01", autostart: false do |aws_01|
-  end
-
-  config.vm.define "aws_02", autostart: false do |aws_02|
-  end
-
 end
