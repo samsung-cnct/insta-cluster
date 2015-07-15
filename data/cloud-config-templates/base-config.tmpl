@@ -94,8 +94,8 @@ coreos:
       - name: 50-docker-registry.conf
         content: |
           [Unit]
-          After=early-docker.service flanneld.service
-          Requires=early-docker.service
+          #After=early-docker.service flanneld.service
+          #Requires=early-docker.service
           [Service]
           ExecStartPre=-/usr/bin/rm /var/run/docker.pid
           Environment='DOCKER_OPTS=--insecure-registry={{.MasterIpAddr}}:5000 --insecure-registry={{.MasterIpAddr}}:5050'
@@ -113,7 +113,7 @@ coreos:
       MountFlags=slave
       LimitNOFILE=1048576
       LimitNPROC=1048576
-      ExecStart=/usr/lib/coreos/dockerd --daemon --insecure-registry={{.MasterIpAddr}}:5000 --insecure-registry={{.MasterIpAddr}}:5050 --host=fd:// --bridge=none --iptables=false --ip-masq=false --graph=/var/li
+      ExecStart=/usr/lib/coreos/dockerd --daemon --insecure-registry={{.MasterIpAddr}}:5050 --host=fd:// --bridge=none --iptables=false --ip-masq=false --graph=/var/li
 
       [Install]
       WantedBy=early-docker.target
