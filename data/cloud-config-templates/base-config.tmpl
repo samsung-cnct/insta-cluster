@@ -94,9 +94,8 @@ coreos:
       - name: 50-docker-registry.conf
         content: |
           [Unit]
-          #After=early-docker.service flanneld.service
-          #Requires=early-docker.service
-          
+          After=early-docker.service flanneld.service
+          Requires=early-docker.service
           [Service]
           ExecStartPre=-/usr/bin/rm /var/run/docker.pid
           Environment='DOCKER_OPTS=--insecure-registry={{.MasterIpAddr}}:5000 --insecure-registry={{.MasterIpAddr}}:5050'
