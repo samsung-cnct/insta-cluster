@@ -2,7 +2,7 @@
 
 ---
 write_files:
-  - path: /opt/bin/load_k8s.sh
+  - path: /opt/bin/load-k8s.sh
     owner: root
     content: |
       #!/usr/bin/bash
@@ -16,7 +16,6 @@ write_files:
       /usr/bin/chmod +x /opt/bin/setup-network-environment
   - path: /etc/ntp.conf
     content: |
-      server {{.MasterIpAddr}}
       server {{.MasterIpAddr}}
 
       # - Allow only time queries, at a limited rate.
@@ -35,25 +34,28 @@ coreos:
     etcd-servers: http://{{.MasterIpAddr}}:2379
     metadata: "role=peon,kube-role=node"
     public-ip: {{.HostIpAddr}}
+  flannel:
+    etcd-endpoints: http://{{.MasterIpAddr}}:2379
+    interface: {{.HostIpAddr}}
   units:
-  - name: update-engine-stub.service
-    command: stop
-    mask: true
   - name: systemd-timesyncd.service
     command: stop
     mask: true
   - name: ntpd.service
     command: start
     enable: true
+  - name: update-engine-stub.service
+    command: stop
+    mask: true
   - name: etcd2.service
     enable: true
     command: start
-    # Disabling etcd may not be necessary but in case it is...
-  - name: etcd.service
-    enable: false
+  # Disabling etcd may not be necessary but in case it is...
+  #- name: etcd.service
+  #  enable: false
   - name: fleet.service
     command: start
-  - name: load_k8s.service
+  - name: load-k8s.service
     command: start
     content: |
       [Unit]
@@ -61,13 +63,10 @@ coreos:
       Wants=network-online.target
       After=network-online.target
       [Service]
-      ExecStartPre=/usr/bin/chmod +x /opt/bin/load_k8s.sh
-      ExecStart=/usr/bin/bash /opt/bin/load_k8s.sh
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/load-k8s.sh
+      ExecStart=/usr/bin/bash /opt/bin/load-k8s.sh
       RemainAfterExit=true
       Type=oneshot
-  - flannel:
-      etcd-endpoints: http://{{.MasterIpAddr}}:2379
-      interface: {{.HostIpAddr}}
   - name: docker.socket
     command: start
     drop-ins:
@@ -87,18 +86,18 @@ coreos:
       BindIPv6Only=both
       Service=docker.service
       [Install]
-      WantedBy=sockets.target
+      WantedBy=sockets.target          
   - name: docker.service
     command: start
     drop-ins:
       - name: 50-docker-registry.conf
         content: |
           [Unit]
-          #After=early-docker.service, flanneld.service
+          #After=early-docker.service flanneld.service
           #Requires=early-docker.service
           [Service]
           ExecStartPre=-/usr/bin/rm /var/run/docker.pid
-          Environment='DOCKER_OPTS=--insecure-registry={{.MasterIpAddr}}:5000 --insecure-registry={{.MasterIpAddr}}:5050'
+          Environment='DOCKER_OPTS= --insecure-registry={{.MasterIpAddr}}:5000 --insecure-registry={{.MasterIpAddr}}:5050'
   - name: early-docker.service
     command: start
     content: |
@@ -200,7 +199,7 @@ coreos:
       --log_cadvisor_usage=true \
       --logtostderr=true \
       --pod-infra-container-image={{.MasterIpAddr}}:5050/insta/pause:0.8.0 \
-      --enable-server \
+      --enable-server=true \
       --v=0
       Restart=always
       RestartSec=10
@@ -219,9 +218,17 @@ coreos:
       --logtostderr=true \
       --v=0
       Restart=always
-      RestartSec=10           
+      RestartSec=10   
+  - name: kube-skydns.service
+    command: start
+    content: |
+      [Unit]
+      Description=Kube SkyDNS service
+      After=kubelet.service
+
+      [Service]
+      ExecStart=/vagrant/bin/kubectl --server=http://{{.MasterIpAddr}}:8080 create -f /vagrant/services/skydns/
+      Type=oneshot
   update:
     group: beta
     reboot-strategy: off
-ssh-authorized-keys:
-  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCewbHjwnuZOVDwEkTI98d7KC3NJKfLHVpnvawOVuNnfy1XxEqakWbsBN9Q6tbod+x76P0jUPc1uixY2aieNmuWd9+bq5+m+5xl/gS5AyBr/DuBMiDNkWPgazeg+l6r77s4+Pl2EVT4wnGd7loP2WNAlZJacXopMDivHfmfL3nBt6DvnWDPN1yJlMAmJkoNIc+fcLCZzKUw9+13w1Y6hK5gd8/5vASB4AZUXYBlvFNCoYYaSIPkHtTGy+fyigkCIlRWIbzpCn4iUT9cj7nb8i1+zyfa0ACx1IP9tFAWxx94UagwrX/Pw/YqoJQfPiTl1ULMusTJHif+csZQZLLgCp3Em3cqRi3oGCTUAP/HtUfqp0pAORWtB4iFTwFw92FT1Qx8ZG9BG/Kk7b8+3+M889I4C34N18nsnpkaJOD6Akm8qGofT+zsjuZaJnJABajGGhJCC2koUP71vdXCms9WcR0Xh56MuLjdCdEzz6vo7oTVvhe2sBNXYf0hXkwCV/1ST+dDJjR1ZCl9+dXyrJPmgyCsBfhY52o8Wufh8A15fdUm607E73+LNhCLL4va57DacDyrgGU/s9rvbvNcKr7RTZY2Lp9/ywiPfYUWlXgDkPiGXf3YPdMpb5OPkyyIFAF4j96dwG2i2fG3Rr7ohEHKomLzlAadxYosbhhVeXlmc4B+kQ== nuc@kubernetes.local
