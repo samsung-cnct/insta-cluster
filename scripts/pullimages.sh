@@ -5,9 +5,10 @@
 # 07/15/2015 mikeln
 #
 SOURCE_REPO="quay.io/mikeln"
-DEST_REPO="171.16.16.15:5000"
+DEST_REPO="172.16.16.15:5000"
+#DEST_REPO="dockerrepo.mineco.lab:5000"
 
-APPS=( "opscenter_kub:v06slim" "cassandra_kub:v21slim" )
+APPS=( "opscenter_kub:v06slim" "cassandra_kub:v22slim" )
 
 for APP in ${APPS[@]}; do
    echo "Pulling: ${SOURCE_REPO}/${APP} to ${DEST_REPO}"
