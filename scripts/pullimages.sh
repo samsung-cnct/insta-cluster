@@ -4,11 +4,11 @@
 #
 # 07/15/2015 mikeln
 #
-SOURCE_REPO="quay.io/mikeln"
+SOURCE_REPO="quay.io/samsung_ag"
 DEST_REPO="172.16.16.15:5000"
 #DEST_REPO="dockerrepo.mineco.lab:5000"
 
-APPS=( "opscenter_kub:v06slim" "cassandra_kub:v23slim" )
+APPS=( "opscenter_kub:v06slim" "cassandra_kub:v23slim" "trogdor-framework:latest" "trogdor-load-generator:latest" "podpincher:latest")
 
 for APP in ${APPS[@]}; do
    echo "Pulling: ${SOURCE_REPO}/${APP} to ${DEST_REPO}"
