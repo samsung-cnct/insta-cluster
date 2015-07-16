@@ -186,6 +186,8 @@ coreos:
       --logtostderr=true \
       --pod-infra-container-image=172.16.16.15:5050/insta/pause:0.8.0 \
       --enable-server=true \
+      --max-pods=1000 \
+      --allow-privileged=true \
       --v=0
       Restart=always
       RestartSec=10
@@ -214,6 +216,16 @@ coreos:
 
       [Service]
       ExecStart=/vagrant/bin/kubectl --server=http://172.16.16.15:8080 create -f /vagrant/services/skydns/
+      Type=oneshot
+  - name: kube-ui.service
+    command: start
+    content: |
+      [Unit]
+      Description=Kube SkyDNS service
+      After=kubelet.service
+
+      [Service]
+      ExecStart=/vagrant/bin/kubectl --server=http://172.16.16.15:8080 create -f /vagrant/services/kube-ui/
       Type=oneshot
   update:
     group: beta
