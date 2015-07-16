@@ -224,16 +224,6 @@ coreos:
       --v=0
       Restart=always
       RestartSec=10   
-  - name: kube-skydns.service
-    command: start
-    content: |
-      [Unit]
-      Description=Kube SkyDNS service
-      After=kubelet.service
-
-      [Service]
-      ExecStart=/vagrant/bin/kubectl --server=http://{{.MasterIpAddr}}:8080 create -f /vagrant/services/skydns/
-      Type=oneshot
   update:
     group: beta
     reboot-strategy: off
