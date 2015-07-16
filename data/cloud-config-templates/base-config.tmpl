@@ -94,7 +94,7 @@ coreos:
       - name: 50-docker-registry.conf
         content: |
           [Unit]
-          #After=early-docker.service flanneld.service
+          #After=early-docker.service, flanneld.service
           #Requires=early-docker.service
           [Service]
           ExecStartPre=-/usr/bin/rm /var/run/docker.pid
