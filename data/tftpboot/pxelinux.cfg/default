@@ -7,4 +7,4 @@ display boot.msg
 label coreos
   menu default
   kernel coreos_production_pxe.vmlinuz
-  append initrd=coreos_production_pxe_image.cpio.gz root=/dev/sda1 cloud-config-url=http://172.16.16.15/cloud-configs/cloud-config.yaml coreos.autologin
+  append initrd=coreos_production_pxe_image.cpio.gz cloud-config-url=http://172.16.16.15/cloud-configs/cloud-config.yaml coreos.autologin
