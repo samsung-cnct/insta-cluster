@@ -96,6 +96,10 @@ coreos:
           #After=early-docker.service flanneld.service
           #Requires=early-docker.service
           [Service]
+          Type=notify
+          Restart=always
+          RestartSec=5
+          # Old docker leaving pid around
           ExecStartPre=-/usr/bin/rm /var/run/docker.pid
           Environment='DOCKER_OPTS= --insecure-registry={{.MasterIpAddr}}:5000 --insecure-registry={{.MasterIpAddr}}:5050'
   - name: early-docker.service
@@ -145,7 +149,7 @@ coreos:
       RestartSec=5
       Environment="TMPDIR=/var/tmp/"
       Environment="DOCKER_HOST=unix:///var/run/early-docker.sock"
-      Environment="FLANNEL_VER=0.4.1"
+      Environment="FLANNEL_VER=0.5.0"
       Environment="ETCD_SSL_DIR=/etc/ssl/etcd"
       LimitNOFILE=40000
       LimitNPROC=1048576
@@ -153,6 +157,7 @@ coreos:
       ExecStartPre=/sbin/modprobe ip_tables
       ExecStartPre=/usr/bin/mkdir -p /run/flannel
       ExecStartPre=/usr/bin/mkdir -p ${ETCD_SSL_DIR}
+      ExecStartPre=-/usr/sbin/brctl addbr docker0
       ExecStartPre=/usr/bin/touch /run/flannel/options.env
 
       ExecStart=/usr/libexec/sdnotify-proxy /run/flannel/sd.sock \
@@ -179,8 +184,8 @@ coreos:
       [Unit]
       Description=Kubernetes Kubelet
       Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-      Requires=flanneld.service 
-      After=flanneld.service
+      Requires=docker.service 
+      After=docker.service
 
       [Service]
       EnvironmentFile=/etc/network-environment
