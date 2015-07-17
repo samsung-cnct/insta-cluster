@@ -207,6 +207,7 @@ coreos:
       --enable-server=true \
       --max-pods=1000 \
       --allow-privileged=true \
+      --node-status-update-frequency=2s \
       --v=0
       Restart=always
       RestartSec=10
