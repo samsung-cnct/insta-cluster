@@ -17,8 +17,7 @@ images=$(cat <<EOF
   gcr.io/google_containers/kube2sky:1.11
   gcr.io/google_containers/skydns:2015-03-11-001
   gcr.io/google_containers/kubectl:v0.18.0-350-gfb3305edcf6c1a
-  prom/promdash
-  quay.io/coreos/tectonic-console:latest
+  prom/promdash:latest
   quay.io/samsung_ag/cassandra_kub:v24slim
   quay.io/samsung_ag/grafana:latest
   quay.io/samsung_ag/influxdb:latest
@@ -26,18 +25,18 @@ images=$(cat <<EOF
   quay.io/samsung_ag/podpincher:latest
   quay.io/samsung_ag/trogdor-framework:latest
   quay.io/samsung_ag/trogdor-load-generator:latest
-  quay.io/spiffxp/prometheus:latest
+  quay.io/samsung_ag/tectonic-ui:latest
+  quay.io/samsung_ag/prometheus:latest
 EOF)
 
 for source_image in ${images[@]}; do
    repo=$(echo $source_image | cut -d/ -f1)
    org=$(echo $source_image | cut -d/ -f2)
-   image=$(echo $source_image | sed -e 's,.*/\([^:]*\).*,\1,')
-   tag=$( (echo $source_image | grep -q : && echo $source_image | cut -d: -f2) || echo "latest")
+   image_tag=${source_image##*/}
 
-   echo "Pulling: ${source_image} to ${dest_repo}/${image}:${tag}"
+   echo "Pulling: ${source_image} to ${dest_repo}/${image_tag}"
    docker pull ${source_image}
-   docker tag  -f ${source_image} ${dest_repo}/${image}:${tag}
+   docker tag  -f ${source_image} ${dest_repo}/${image_tag}
    docker images ${dest_repo}/*
-   docker push ${dest_repo}/${image}:${tag}
+   docker push ${dest_repo}/${image_tag}
 done
