@@ -25,7 +25,7 @@ spec:
             limits:
               cpu: 100m
               memory: 50Mi
-          image: gcr.io/google_containers/etcd:2.0.9
+          image: 172.16.16.15:5050/insta/etcd:2.0.9
           command:
             - /usr/local/bin/etcd
             - -data-dir
@@ -44,7 +44,7 @@ spec:
             limits:
               cpu: 100m
               memory: 50Mi
-          image: gcr.io/google_containers/kube2sky:1.11
+          image: 172.16.16.15:5050/insta/kube2sky:1.11
           # command: "/kube2sky"
           args:
             - -domain=kubernetes.local
@@ -59,7 +59,7 @@ spec:
             limits:
               cpu: 100m
               memory: 50Mi
-          image: gcr.io/google_containers/skydns:2015-03-11-001
+          image: 172.16.16.15:5050/insta/skydns:2015-03-11-001
           # command: "/skydns"
           args:
             - -machines=http://localhost:4001
@@ -80,7 +80,7 @@ spec:
             initialDelaySeconds: 30
             timeoutSeconds: 5
         - name: healthz
-          image: gcr.io/google_containers/exechealthz:1.0
+          image: 172.16.16.15:5050/insta/exechealthz:1.0
           resources:
             limits:
               cpu: 10m
