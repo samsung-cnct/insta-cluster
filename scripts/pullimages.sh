@@ -19,7 +19,7 @@ images=$(cat <<EOF
   gcr.io/google_containers/kubectl:v0.18.0-350-gfb3305edcf6c1a
   prom/promdash
   quay.io/coreos/tectonic-console:latest
-  quay.io/samsung_ag/cassandra_kub:v23slim
+  quay.io/samsung_ag/cassandra_kub:v24slim
   quay.io/samsung_ag/grafana:latest
   quay.io/samsung_ag/influxdb:latest
   quay.io/samsung_ag/opscenter_kub:v06slim
