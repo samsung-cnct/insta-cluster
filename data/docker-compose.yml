@@ -51,7 +51,9 @@ controllermanager:
   command: >
     --logtostderr=true
     --master=http://172.16.16.15:8080
-    --node-monitor-grace-period=20s
+    --node-monitor-grace-period=10s
+    --node-monitor-period=2s
+    --pod-eviction-timeout=10s
     --cloud-provider=""
     --v=0
   net: "host"
@@ -77,7 +79,7 @@ register:
     --fleet-endpoint=unix:///var/run/fleet.sock
     --healthz-port="10254"
     --metadata="kube-role=node"
-    --sync-interval=5
+    --sync-interval=2
   net: "host"
   restart: "always"
   volumes:
