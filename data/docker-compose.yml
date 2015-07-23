@@ -28,7 +28,7 @@ configorator:
     --template templates
     --master 172.16.16.15
 apiserver:
-  image: "172.16.16.15:5050/insta/kube-apiserver:1.0.0"
+  image: "172.16.16.15:5050/insta/kube-apiserver:1.0.1"
   command: >
     --etcd-servers=http://172.16.16.15:2379
     --external-hostname=172.16.16.15
@@ -47,7 +47,7 @@ apiserver:
     - "/usr/share/ca-certificates:/etc/ssl/certs"
     - "/var/run:/var/run"
 controllermanager:
-  image: "172.16.16.15:5050/insta/kube-controller-manager:1.0.0"
+  image: "172.16.16.15:5050/insta/kube-controller-manager:1.0.1"
   command: >
     --logtostderr=true
     --master=http://172.16.16.15:8080
@@ -62,7 +62,7 @@ controllermanager:
     - "/etc:/etc"
     - "/usr/share/ca-certificates:/etc/ssl/certs"
 scheduler:
-  image: "172.16.16.15:5050/insta/kube-scheduler:1.0.0"
+  image: "172.16.16.15:5050/insta/kube-scheduler:1.0.1"
   command: >
     --master=http://172.16.16.15:8080
     --logtostderr=true

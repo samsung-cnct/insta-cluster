@@ -1,5 +1,5 @@
 # insta-cluster
-__This is PINNED to KUBERNETES RELEASE 1.0.0 and COREOS BETA 738.1.0__
+__This is PINNED to KUBERNETES RELEASE 1.0.1__
 
 This deployment is designed to work off-net once you cloned this repository and performa an initial ```vagrant up``` to grab all the executables and binaries, the ones that weren't fit to print(not able to commit to git).
 
